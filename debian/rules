@@ -60,7 +60,8 @@ binary-arch: build install
 	# dh_installemacsen
 	# dh_installpam
 	# dh_installmime
-	# dh_installinit
+	dh_installinit --init-script=i8kmon
+	dh_installinit --init-script=i8kbuttons
 	# dh_installcron
 	dh_installman *.1
 	ln -s i8kctl.1 $(CURDIR)/debian/i8kutils/usr/share/man/man1/i8kfan.1

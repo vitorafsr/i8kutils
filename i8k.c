@@ -3,7 +3,7 @@
  *	    See http://www.debian.org/~dz/i8k/ for more information
  *	    and for latest version of this driver.
  *
- * Copyright (C) 2001  Massimo Dal Zotto <dz@debian.org>
+ * Copyright (C) 2001-2003  Massimo Dal Zotto <dz@debian.org>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,12 +22,17 @@
 #include <linux/init.h>
 #include <linux/proc_fs.h>
 #include <linux/apm_bios.h>
+#include <linux/i8k.h>
 #include <asm/uaccess.h>
 #include <asm/io.h>
 
-#include <linux/i8k.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
+#include <linux/kbd_kern.h>
+#include <linux/kbd_ll.h>
+#include <linux/timer.h>
+#endif
 
-#define I8K_VERSION		"1.12 18/03/2002"
+#define I8K_VERSION		"1.24 29/12/2003"
 
 #define I8K_SMM_FN_STATUS	0x0025
 #define I8K_SMM_POWER_STATUS	0x0069
@@ -35,7 +40,8 @@
 #define I8K_SMM_GET_FAN		0x00a3
 #define I8K_SMM_GET_SPEED	0x02a3
 #define I8K_SMM_GET_TEMP	0x10a3
-#define I8K_SMM_GET_DELL_SIG	0xffa3
+#define I8K_SMM_GET_DELL_SIG1	0xfea3
+#define I8K_SMM_GET_DELL_SIG2	0xffa3
 #define I8K_SMM_BIOS_VERSION	0x00a6
 
 #define I8K_FAN_MULT		30
@@ -66,9 +72,9 @@ static char product_name [48] = "?";
 static char bios_version [4]  = "?";
 static char serial_number[16] = "?";
 
-int force = 0;
-int restricted = 0;
-int power_status = 0;
+static int force = 0;
+static int restricted = 0;
+static int power_status = 0;
 
 MODULE_AUTHOR("Massimo Dal Zotto (dz@debian.org)");
 MODULE_DESCRIPTION("Driver for accessing SMM BIOS on Dell laptops");
@@ -80,13 +86,43 @@ MODULE_PARM_DESC(force, "Force loading without checking for supported models");
 MODULE_PARM_DESC(restricted, "Allow fan control if SYS_ADMIN capability set");
 MODULE_PARM_DESC(power_status, "Report power status in /proc/i8k");
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0))
+/* Interval between polling of keys, in jiffies. */
+#define I8K_POLL_INTERVAL	(HZ/20)
+#define I8K_REPEAT_DELAY	250	/* 250 ms */
+#define I8K_REPEAT_RATE		10
+
+/*
+ * (To be escaped) Scancodes for the keys.  These were chosen to match other
+ * "Internet" keyboards.
+ */
+#define I8K_KEYS_UP_SCANCODE	0x30
+#define I8K_KEYS_DOWN_SCANCODE	0x2e
+#define I8K_KEYS_MUTE_SCANCODE	0x20
+
+static struct timer_list i8k_keys_timer;
+
+static int handle_buttons = 0;
+static int repeat_delay = I8K_REPEAT_DELAY;
+static int repeat_rate = I8K_REPEAT_RATE;
+
+MODULE_PARM(handle_buttons, "i");
+MODULE_PARM(repeat_delay, "i");
+MODULE_PARM(repeat_rate, "i");
+MODULE_PARM_DESC(handle_buttons, "Generate keyboard events for i8k buttons");
+MODULE_PARM_DESC(repeat_delay, "I8k buttons repeat delay (ms)");
+MODULE_PARM_DESC(repeat_rate, "I8k buttons repeat rate");
+
+static void i8k_keys_set_timer(void);
+#endif
+
 static ssize_t i8k_read(struct file *, char *, size_t, loff_t *);
 static int i8k_ioctl(struct inode *, struct file *, unsigned int,
 		     unsigned long);
 
 static struct file_operations i8k_fops = {
-    read:	i8k_read,
-    ioctl:	i8k_ioctl,
+    .read	= i8k_read,
+    .ioctl	= i8k_ioctl,
 };
 
 typedef struct {
@@ -308,12 +344,12 @@ static int i8k_get_cpu_temp(void)
     return temp;
 }
 
-static int i8k_get_dell_signature(void)
+static int i8k_get_dell_sig_aux(int fn)
 {
     SMMRegisters regs = { 0, 0, 0, 0, 0, 0 };
     int rc;
 
-    regs.eax = I8K_SMM_GET_DELL_SIG;
+    regs.eax = fn;
     if ((rc=i8k_smm(&regs)) < 0) {
 	return rc;
     }
@@ -323,6 +359,18 @@ static int i8k_get_dell_signature(void)
     } else {
 	return -1;
     }
+}
+
+static int i8k_get_dell_signature(void)
+{
+    int rc;
+
+    if (((rc=i8k_get_dell_sig_aux(I8K_SMM_GET_DELL_SIG1)) < 0) &&
+	((rc=i8k_get_dell_sig_aux(I8K_SMM_GET_DELL_SIG2)) < 0)) {
+	return rc;
+    }
+
+    return 0;
 }
 
 static int i8k_ioctl(struct inode *ip, struct file *fp, unsigned int cmd,
@@ -488,7 +536,62 @@ static ssize_t i8k_read(struct file *f, char *buffer, size_t len, loff_t *fpos)
     *fpos += len;
     return len;
 }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
+/*
+ * i8k_keys stuff. Thanks to David Bustos <bustos@caltech.edu>
+ */
 
+static unsigned char i8k_keys_make_scancode(int x) {
+    switch (x) {
+    case I8K_FN_UP:	return I8K_KEYS_UP_SCANCODE;
+    case I8K_FN_DOWN:	return I8K_KEYS_DOWN_SCANCODE;
+    case I8K_FN_MUTE:	return I8K_KEYS_MUTE_SCANCODE;
+    }
+
+    return 0;
+}
+
+static void i8k_keys_poll(unsigned long data) {
+    static int last = 0;
+    static int repeat = 0;
+
+    int  curr;
+
+    curr = i8k_get_fn_status();
+    if (curr >= 0) {
+	if (curr != last) {
+	    repeat = jiffies + (HZ * repeat_delay / 1000);
+	    if (last != 0) {
+		/* Generate up event for last button */
+		handle_scancode(0xe0, 0);
+		handle_scancode(i8k_keys_make_scancode(last), 0);
+	    }
+	    if (curr != 0) {
+		/* Generate down event for curr button */
+		handle_scancode(0xe0, 1);
+		handle_scancode(i8k_keys_make_scancode(curr), 1);
+	    }
+	} else {
+	    /* Generate keyboard repeat events with current scancode -- dz */
+	    if ((curr) && (repeat_rate > 0) && time_after_eq(jiffies,repeat)) {
+		repeat = jiffies + (HZ / repeat_rate);
+		handle_scancode(0xe0, 1);
+		handle_scancode(i8k_keys_make_scancode(curr), 1);
+	    }
+	}
+
+	last = curr;
+    }
+
+    /* Reset the timer. */
+    i8k_keys_set_timer();
+}
+
+static void i8k_keys_set_timer() {
+    i8k_keys_timer.expires = jiffies + I8K_POLL_INTERVAL;
+    add_timer(&i8k_keys_timer);
+}
+#endif
 static char* __init string_trim(char *s, int size)
 {
     int len;
@@ -762,11 +865,25 @@ int __init i8k_init(void)
     printk(KERN_INFO
 	   "Dell laptop SMM driver v%s Massimo Dal Zotto (dz@debian.org)\n",
 	   I8K_VERSION);
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
+    /* Register the i8k_keys timer. */
+    if (handle_buttons) {
+	printk(KERN_INFO
+	       "i8k: enabling buttons events, delay=%d, rate=%d\n",
+	       repeat_delay, repeat_rate);
+	init_timer(&i8k_keys_timer);
+	i8k_keys_timer.function = i8k_keys_poll;
+	i8k_keys_set_timer();
+    }
+#endif
     return 0;
 }
 
 #ifdef MODULE
+#ifndef MODVERSIONS
+#warning "compiling unversioned module, load with insmod --force"
+#endif
+
 int init_module(void)
 {
     return i8k_init();
@@ -776,7 +893,12 @@ void cleanup_module(void)
 {
     /* Remove the proc entry */
     remove_proc_entry("i8k", NULL);
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
+    /* Unregister the i8k_keys timer. */
+    while (handle_buttons && !del_timer(&i8k_keys_timer)) {
+	schedule_timeout(I8K_POLL_INTERVAL);
+    }
+#endif
     printk(KERN_INFO "i8k: module unloaded\n");
 }
 #endif

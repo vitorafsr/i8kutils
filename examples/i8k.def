@@ -12,4 +12,9 @@
   <PrevTrack keycode="131"/>
   <NextTrack keycode="132"/>
 
+  <!-- available only if i8k is loaded with handle_buttons=1 -->
+  <Mute      keycode="160"/>
+  <VolDown   keycode="174" adj="5"/>
+  <VolUp     keycode="176" adj="5"/>
+
 </CONFIG>

@@ -7,7 +7,7 @@ Standards-Version: 3.5.2
 
 Package: i8kutils
 Architecture: i386
-Depends: ${shlibs:Depends}, tcl8.3 | tclsh, tk8.3 | wish
+Depends: ${shlibs:Depends}, tk8.4 | wish
 Conflicts: i8kfan
 Replaces: i8kfan
 Description: Dell Inspiron and Latitude laptop utilities
@@ -17,7 +17,7 @@ Description: Dell Inspiron and Latitude laptop utilities
  and Fn-keys.
  .
  The package includes also a small Tk applet, designed to be swallowed in the
- gnome panel, which monitors the CPU temperature and comtrols automatically
+ gnome panel, which monitors the CPU temperature and controls automatically
  the fans accordingly to user defined thresholds.
  .
  The programs require the kernel module i8k.o which can be compiled from

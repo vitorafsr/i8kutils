@@ -1,0 +1,66 @@
+#!/bin/sh
+#
+# i8kutils	Dell Inspiron fan/cpu-temperature monitor
+#
+#		Written by Miquel van Smoorenburg <miquels@cistron.nl>.
+#		Modified for Debian GNU/Linux
+#		by Ian Murdock <imurdock@gnu.ai.mit.edu>.
+#
+#		Modified for i8kutils by Karl E. Jørgensen <karl@jorgensen.com>
+#		and Massimo Dal Zotto <dz@debian.org>
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/i8kmon
+CONFIGFILE=/etc/i8kmon
+PROC_I8K=/proc/i8k
+NAME=i8kmon
+DESC="Dell Inspiron fan/cpu-temperature monitor"
+I8KMON_ARGS="--daemon"
+
+set -e
+
+test -x $DAEMON || exit 0
+
+CONFIG_DAEMON=$(
+    # Config file /etc/i8kmon is optional
+    cat "$CONFIGFILE" 2>/dev/null \
+      | sed 's/#.*//g;/config(daemon)/!d;s/.*(.*)[ 	]*//g'
+)
+
+case "$1" in
+    start)
+	test -e "$PROC_I8K" || exit 0
+	test "$CONFIG_DAEMON" = 1 || exit 0
+	echo -n "Starting $DESC: $NAME"
+	start-stop-daemon --start --quiet --pidfile /var/run/$NAME.pid \
+	    --exec $DAEMON --background --make-pidfile -- $I8KMON_ARGS
+	echo "."
+	;;
+    stop)
+	echo -n "Stopping $DESC: $NAME "
+	start-stop-daemon --oknodo --stop --quiet --pidfile /var/run/$NAME.pid
+	echo "."
+	rm -f /var/run/$NAME.pid
+	;;
+    restart|reload|force-reload)
+	# Sending SIGHUP doesn't work since tclsh doesn't handle signals
+	test -e "$PROC_I8K" || exit 0
+	test "$CONFIG_DAEMON" = 1 || exit 0
+	echo -n "Restarting $DESC: $NAME"
+	start-stop-daemon --oknodo --stop --quiet \
+	    --pidfile /var/run/$NAME.pid
+	rm -f /var/run/$NAME.pid
+	sleep 1
+	start-stop-daemon --start --quiet \
+	    --pidfile /var/run/$NAME.pid --exec $DAEMON \
+	    --background --make-pidfile -- $I8KMON_ARGS
+	echo "."
+	;;
+    *)
+	N=/etc/init.d/$NAME
+	echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

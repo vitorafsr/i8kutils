@@ -1,3 +1,136 @@
+i8kutils (1.25) unstable; urgency=low
+
+  * Fixed fprintf format string in i8kbuttons.
+
+  * Changed dependencies: added tk8.4 and removed tclsh.
+    Closes: #239895.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Thu, 25 Mar 2004 09:46:03 +0100
+
+i8kutils (1.24) unstable; urgency=low
+
+  * In i8k module added support for alternate DELL signature function.
+
+  * In i8kmon added support for new acpi proc path of Linux 2.6.
+
+  * In i8k.h fixed compilation errors with Linux 2.6 kernel headers.
+    Closes: #223163.
+
+  * Updated README file.
+    Closes: #193429, #215734.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Mon,  5 Jan 2004 12:13:54 +0100
+
+i8kutils (1.23) unstable; urgency=low
+
+  * In i8kmon require a Tk version compatible with Tcl.
+    Closes: #211407.
+
+  * Updated README file.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Mon, 22 Sep 2003 22:10:03 +0200
+
+i8kutils (1.22) unstable; urgency=low
+
+  * Ported module to kernel 2.5. The module compiles also on kernel 2.4.
+    Removed handle_buttons code since it is now handled by the kernel
+    keyboard driver.
+
+  * Declared all module parameters static. In makefile keep needed static
+    symbols when stripping the obj.
+
+  * In i8k module use time_after_eq() for comparing jiffies.
+
+  * Added redhat specfile contributed by <roger@eskimo.com>.
+
+  * Updated README file.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Tue, 21 Jan 2003 18:42:32 +0100
+
+i8kutils (1.21) unstable; urgency=low
+
+  * Fixed inconsistencies in README and i8kmon manpage.
+    Closes: Bug#157852.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Thu, 22 Aug 2002 17:41:23 +0200
+
+i8kutils (1.20) unstable; urgency=low
+
+  * Added i8kbuttons init script as suggested by Philippe Troin.
+    Closes: Bug#157339.
+
+  * Renamed /etc/init.d/i8kutils to /etc/init.d/i8kmon.
+
+  * Updated i8kbuttons, i8kmon manpages and README.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Tue, 20 Aug 2002 21:25:07 +0200
+
+i8kutils (1.19) unstable; urgency=low
+
+  * In debian/control fixed typo in package description.
+    Closes: Bug#156738.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Fri, 16 Aug 2002 22:26:33 +0200
+
+i8kutils (1.18) unstable; urgency=low
+
+  * In init script use sed (essential package) instead of awk.
+    Closes: Bug#156442.
+
+  * Updated README.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Mon, 12 Aug 2002 21:53:37 +0200
+
+i8kutils (1.17) unstable; urgency=low
+
+  * Fixed quoting bug in init script.
+    Closes: Bug#155951.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Thu,  8 Aug 2002 20:41:58 +0200
+
+i8kutils (1.16) unstable; urgency=low
+
+  * In i8kmon script use tcl interpreter instead of tclsh if installed.
+    This allows correct handling of SIGHUP.
+
+  * In i8kmon detect automatically laptops with only one fan and reconfigure
+    the user interface with left button only.
+
+  * Added i8kutils init script as suggested by Karl E. Jørgensen.
+    The daemon is started only if daemon option is set in /etc/i8kmon,
+    which is not the default since the monitor is normally run by users.
+    Closes: Bug#155629.
+
+  * Updated README.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Wed,  7 Aug 2002 13:53:51 +0200
+
+i8kutils (1.15) unstable; urgency=low
+
+  * Changed i8kbuttons default commands since people keep on sending
+    bug reports without reading the README first.
+    Closes: Bug#155087, Bug#155106. 
+
+  * Updated README.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Thu,  1 Aug 2002 16:05:43 +0200
+
+i8kutils (1.14) unstable; urgency=low
+
+  * In Makefile added install_man target and PREFIX user variable.
+
+  * Updated README.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Tue,  9 Jul 2002 23:30:46 +0200
+
+i8kutils (1.13) frozen unstable; urgency=high
+
+  * In i8k module added support for generating keyboard events.
+
+  * Updated examples/i8k.def and README.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Tue, 14 May 2002 14:02:50 +0200
+
 i8kutils (1.12) frozen unstable; urgency=low
 
   * In i8k module added restricted fan control option.

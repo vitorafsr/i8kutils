@@ -17,16 +17,21 @@
 # General Public License for more details.
 #
 #\
-exec tclsh $0 -- "$@"
+if command -v tcl >/dev/null 2>&1; then \
+    exec tcl $0 -- "$@"; \
+else \
+    exec tclsh $0 -- "$@"; \
+fi
 
-set PROG_VERSION "v1.12 18/03/2002"
+set PROG_VERSION "v1.24 29/12/2003"
 
 array set config {
     sysconfig	/etc/i8kmon
     userconfig	~/.i8kmon
     proc_i8k	/proc/i8k
     proc_apm	/proc/apm
-    proc_acpi	/proc/acpi/ac_adapter/0/status
+    proc_ac24	/proc/acpi/ac_adapter/0/status
+    proc_ac26	/proc/acpi/ac_adapter/AC/state
     i8kfan	/usr/bin/i8kfan
     geometry	{}
     auto	1
@@ -46,6 +51,7 @@ array set status {
     left	{}
     right	{}
     timer	{}
+    nfans	2
     apm_timer	0
     state	0
     temp	0
@@ -66,7 +72,8 @@ proc read_config {} {
     global config
     global status
 
-    # array set BIOS_defaults {
+    # I8000 A17 BIOS defaults:
+    # array set defaults {
     #	0	{{0 0}  -1  76  -1  76}
     #	1	{{1 0}  67  82  67  82}
     #	2	{{1 1}  70  87  70  87}
@@ -153,6 +160,10 @@ proc read_i8k_status {} {
     }
 
     set info [seek $status(proc_i8k) 0; read -nonewline $status(proc_i8k)]
+    # Uncomment to force high temp or one fan for debugging
+    # set info [lreplace $info 3 3 80]
+    # set info [lreplace $info 5 5 -22]; set info [lreplace $info 7 7 -22]
+
     set status(temp)   [lindex $info 3]
     set status(lstate) [lindex $info 4]
     set status(rstate) [lindex $info 5]
@@ -164,6 +175,15 @@ proc read_i8k_status {} {
 	set status(ac) $ac
     } else {
 	read_ac_status
+    }
+
+    # If second fan status is not available assume we have only a fan
+    if {$status(nfans) >= 2 && $status(lstate) >= 0 && $status(rstate) < 0} {
+	set status(nfans) 1
+	catch {
+	    place forget .applet.rfan
+	    place .applet.lfan -relx 0.0 -rely 0.5 -relwidth 1.0 -relheight 0.5
+	}
     }
 
     # If fan speed is not available (on I4000) assume fans are running
@@ -191,8 +211,11 @@ proc read_ac_status {} {
     if {[info exists status(proc_apm)] || [file exists $config(proc_apm)]} {
 	if {[read_apm_status]} return
     }
-    if {[info exists status(proc_acpi)] || [file exists $config(proc_acpi)]} {
-	if {[read_acpi_status]} return
+    if {[info exists status(proc_ac24)] || [file exists $config(proc_ac24)]} {
+	if {[read_ac24_status]} return
+    }
+    if {[info exists status(proc_ac26)] || [file exists $config(proc_ac26)]} {
+	if {[read_ac26_status]} return
     }
     return 0
 }
@@ -213,21 +236,21 @@ proc read_apm_status {} {
     }
 
     if {$config(verbose) > 0} {
-	puts "[clock seconds] $info"
+	puts "[clock seconds] apm: $info"
     }
 
     return 1
 }
 
-proc read_acpi_status {} {
+proc read_ac24_status {} {
     global config
     global status
 
-    if {![info exists status(proc_acpi)] && ![open_proc_acpi]} {
+    if {![info exists status(proc_ac24)] && ![open_proc_ac24]} {
 	return 0
     }
 
-    set info [seek $status(proc_acpi) 0; read -nonewline $status(proc_acpi)]
+    set info [seek $status(proc_ac24) 0; read -nonewline $status(proc_ac24)]
     if {[lindex $info 1] == "on-line"} {
 	set status(ac) 1
     } else {
@@ -235,7 +258,29 @@ proc read_acpi_status {} {
     }
 
     if {$config(verbose) > 0} {
-	puts "[clock seconds] $info"
+	puts "[clock seconds] acpi: $info"
+    }
+
+    return 1
+}
+
+proc read_ac26_status {} {
+    global config
+    global status
+
+    if {![info exists status(proc_ac26)] && ![open_proc_ac26]} {
+	return 0
+    }
+
+    set info [seek $status(proc_ac26) 0; read -nonewline $status(proc_ac26)]
+    if {[lindex $info 1] == "on-line"} {
+	set status(ac) 1
+    } else {
+	set status(ac) 0
+    }
+
+    if {$config(verbose) > 0} {
+	puts "[clock seconds] acpi: $info"
     }
 
     return 1
@@ -244,6 +289,10 @@ proc read_acpi_status {} {
 proc open_proc_i8k {} {
     global config
     global status
+
+    if {$config(verbose) > 0} {
+	puts "[clock seconds] opening $config(proc_i8k)"
+    }
 
     if {[catch {set status(proc_i8k) [open $config(proc_i8k)]}]} {
 	return 0
@@ -266,6 +315,10 @@ proc open_proc_apm {} {
     global config
     global status
 
+    if {$config(verbose) > 0} {
+	puts "[clock seconds] opening $config(proc_apm)"
+    }
+
     if {[catch {set status(proc_apm) [open $config(proc_apm)]}]} {
 	return 0
     }
@@ -283,16 +336,40 @@ proc open_proc_apm {} {
     return 1
 }
 
-proc open_proc_acpi {} {
+proc open_proc_ac24 {} {
     global config
     global status
 
-    if {[catch {set status(proc_acpi) [open $config(proc_acpi)]}]} {
+    if {$config(verbose) > 0} {
+	puts "[clock seconds] opening $config(proc_ac24)"
+    }
+
+    if {[catch {set status(proc_ac24) [open $config(proc_ac24)]}]} {
 	return 0
     }
 
-    if {[catch {set info [read -nonewline $status(proc_acpi)]}]} {
-	close $status(proc_acpi); unset status(proc_acpi)
+    if {[catch {set info [read -nonewline $status(proc_ac24)]}]} {
+	close $status(proc_ac24); unset status(proc_ac24)
+	return 0
+    }
+
+    return 1
+}
+
+proc open_proc_ac26 {} {
+    global config
+    global status
+
+    if {$config(verbose) > 0} {
+	puts "[clock seconds] opening $config(proc_ac26)"
+    }
+
+    if {[catch {set status(proc_ac26) [open $config(proc_ac26)]}]} {
+	return 0
+    }
+
+    if {[catch {set info [read -nonewline $status(proc_ac26)]}]} {
+	close $status(proc_ac26); unset status(proc_ac26)
 	return 0
     }
 
@@ -310,9 +387,13 @@ proc close_procfs {} {
 	catch {close $status(proc_apm)}
 	unset status(proc_apm)
     }
-    if {[info exists status(proc_acpi)]} {
-	catch {close $status(proc_acpi)}
-	unset status(proc_acpi)
+    if {[info exists status(proc_ac24)]} {
+	catch {close $status(proc_ac24)}
+	unset status(proc_ac24)
+    }
+    if {[info exists status(proc_ac26)]} {
+	catch {close $status(proc_ac26)}
+	unset status(proc_ac26)
     }
 }
 
@@ -390,6 +471,7 @@ proc set_fan {{state {}}} {
     if {$right == $status(rstate)} {
 	set right {}
     }
+    if {$status(nfans) < 2} { set right {} }
 
     if {$left != {} || $right != {}} {
 	i8kfan $left $right
@@ -414,6 +496,7 @@ proc i8kfan {args} {
 proc make_ui {} {
     global status
     global config
+    global tcl_version
 
     if {$config(daemon) == 1} {
 	# Daemon mode, no user interface
@@ -424,8 +507,8 @@ proc make_ui {} {
 	return
     }
 
-    # Load Tk library
-    package require Tk
+    # Load Tk library (require a Tk version compatible with Tcl)
+    package require Tk $tcl_version
     wm withdraw .
 
     toplevel .applet -class i8kmon
@@ -502,10 +585,10 @@ proc update_ui {} {
     } else {
 	set fg black
     }
-    if {$config(unit) != "F" } {
-	.applet.temp config -text $status(temp) -fg $fg
-    } else {
+    if {$config(unit) == "F" } {
 	.applet.temp config -text [expr (0+$status(temp))*9/5+32] -fg $fg
+    } else {
+	.applet.temp config -text $status(temp) -fg $fg
     }
 
     # Left button
@@ -523,6 +606,7 @@ proc update_ui {} {
     }
 
     # Right button
+    if {$status(nfans) < 2} { return }
     if {$status(rstate) != 0 && $status(rspeed) < $config(min_speed)} {
 	incr status(rstuck)
     } else {
@@ -591,22 +675,28 @@ proc parse_options {} {
 		usage
 		exit
 	    }
-	    -d - --daemon {
+	    --daemon - -d {
 		set config(daemon) 1
 	    }
-	    -n - --noauto {
+	    --nodaemon - -nd {
+		set config(daemon) 0
+	    }
+	    --auto - -a {
+		set config(auto) 1
+	    }
+	    --noauto - -na - -n {
 		set config(auto) 0
 	    }
-	    -v - --verbose {
+	    --verbose - -v {
 		set config(verbose) 1
 	    }
-	    -g - --geometry {
+	    --geometry - -g {
 		set config(geometry) [lindex $argv [incr i]]
 	    }
-	    -t - --timeout {
+	    --timeout - -t {
 		set config(timeout) [lindex $argv [incr i]]
 	    }
-	    -u - --unit {
+	    --unit - -u {
 		set config(unit) [lindex $argv [incr i]]
 	    }
 	    -- {
@@ -643,7 +733,7 @@ proc main {} {
 
 if {$tcl_interactive == 0} {
     main
-    vwait exit
+    vwait forever
 }
 
 # Local variables:

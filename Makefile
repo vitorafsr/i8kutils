@@ -1,7 +1,7 @@
 #
 # Makefile -- makefile for compiling the i8k Linux Utilities
 #
-# Copyright (C) 2001  Massimo Dal Zotto <dz@debian.org>
+# Copyright (C) 2001-2003  Massimo Dal Zotto <dz@debian.org>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,6 +14,9 @@
 # General Public License for more details.
 #
 
+# Override with: make module KERNEL_SOURCE=/usr/src/kernel-headers-2.4.17
+KERNEL_SOURCE = /usr/src/linux
+PREFIX	      = /usr
 POLL_TIMEOUT  = 100
 #MODVERSIONS  = -DMODVERSIONS
 
@@ -24,7 +27,8 @@ SRCDIR        = $(shell pwd | sed 's|.*/||g')
 CC            = gcc
 CFLAGS        = -O2 -Wall
 KERNEL_FLAGS  = -D__KERNEL__ -DMODULE $(MODVERSIONS)
-KERNEL_SOURCE = /usr/src/linux
+BINDIR	      = $(PREFIX)/bin
+MANDIR	      = $(PREFIX)/share/man
 INCLUDE       = -I. -I$(KERNEL_SOURCE)/include
 
 ifdef MODVERSIONS
@@ -41,8 +45,15 @@ i8kctl:		i8kctl.c
 		ln -fs $@ i8kfan
 
 install:	i8kbuttons i8kctl i8kmon
-		cp -fp i8kbuttons i8kctl i8kmon $(DESTDIR)/usr/bin/
-		ln -fs i8kctl $(DESTDIR)/usr/bin/i8kfan
+		cp -fp i8kbuttons i8kctl i8kmon $(DESTDIR)/$(BINDIR)/
+		ln -fs i8kctl $(DESTDIR)/$(BINDIR)/i8kfan
+
+install-man:
+		for f in *.1; do \
+		    gzip -f -9 < $$f > $(DESTDIR)/$(MANDIR)/man1/$$f.gz; \
+		done
+
+install_man:	install-man
 
 clean:
 		rm -f *.o *~ "#*#"
@@ -68,7 +79,10 @@ modversion:
 
 i8k.o:		i8k.c
 		$(CC) $(CFLAGS) $(KERNEL_FLAGS) $(INCLUDE) -o $@ -c $<
-		strip --strip-unneeded $@
+		strip --strip-unneeded \
+		    -K force -K restricted -K power_status \
+		    -K handle_buttons -K repeat_delay -K repeat_rate \
+		    $@
 
 module-install:	i8k.o
 		mkdir -p /lib/modules/$$(uname -r)/misc/

@@ -44,10 +44,13 @@
 #define DPRINTF(fmt, args...)
 #endif
 
-/* Default commands, can be overriden with command-line args */
-static char *cmd_up   = "setmixer +5";
-static char *cmd_down = "setmixer -5";
-static char *cmd_mute = "setmixer -m";
+/* Default commands, must be overriden with command-line args */
+static char *cmd_up = 
+    "echo specify your cmd_up command with -u and don\\'t send bug reports";
+static char *cmd_down =
+    "echo specify your cmd_down command with -d and don\\'t send bug reports";
+static char *cmd_mute =
+    "echo specify your cmd_mute command with -m and don\\'t send bug reports";
 
 static int verbose = 0;
 
@@ -160,7 +163,7 @@ main(int argc, char **argv)
 	if ((strcmp(argv[0],"-r")==0) || (strcmp(argv[0],"--repeat")==0)) {
 	    if (argc < 2) break;
 	    repeat = atoi(argv[1]);
-	    if ((repeat < 100) || (repeat > 1000)) {
+	    if ((repeat != 0) && ((repeat < 100) || (repeat > 1000))) {
 		fprintf(stderr, "invalid repeat value: %s\n", argv[1]);
 		exit(1);
 	    }
@@ -180,7 +183,7 @@ main(int argc, char **argv)
     }
 
     if ((fd=open(I8K_PROC, O_RDONLY)) < 0) {
-	fprintf(stderr, "unable to open i8k proc file: %s", I8K_PROC);
+	fprintf(stderr, "unable to open i8k proc file: %s\n", I8K_PROC);
 	exit(1);
     }
 

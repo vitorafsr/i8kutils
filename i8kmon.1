@@ -1,4 +1,4 @@
-.TH i8kmon 1 "18 March 2002" "Massimo Dal Zotto" Utilities
+.TH i8kmon 1 "22 August 2002" "Massimo Dal Zotto" Utilities
 .SH "NAME"
 .LP 
 I8kmon \- Monitor the cpu temperature and fan status on Dell
@@ -14,7 +14,7 @@ The program can be run in background as daemon or under X as
 an applet which can be swallowed in the gnome panel.
 .LP 
 By default the program monitors the cpu temperature and
-controls automatically the fan status accordingly to
+automatically controls the fan status accordingly to
 user\-defined temperature thresholds. This automatic behavior
 can be disabled with the \fB\-\-noauto\fR option.
 .LP
@@ -26,16 +26,17 @@ automatic fan control, Verbose, which prints status on stdout,
 and Suspend, which closes the /proc/i8kfan file and suspends
 the daemon to allow unloading the kernel module.
 .LP 
-The user interface reports in the top box the current cpu
-temperature and  in the two lower buttons the status of the
-fans.
+The user interface reports the current cpu temperature in
+the top box and  in the two lower buttons the status of the
+fans. On systems wiht only one fan the interface shows only
+one fan button.
 If a button's background becomes red it means that the
 corresponding fan has a rotation speed lower than the
 minimum expected speed and is probably stuck.
 In this case proding it with a bent paper clip can often
 cause it to become unstuck.
 .LP 
-The two fan buttons can also be used to control manually the
+The fan buttons can also be used to manually control the
 fan speeds.
 Clicking on a fan button with the left mouse button will
 cycle the selected fan between low speed, high speed and off.
@@ -53,7 +54,15 @@ The program accepts the following command\-line options:
 Run the program in daemon mode, i.e. without the user
 interface.
 .TP 
-\fB\-n\fR, \fB\-\-noauto\fR
+\fB\-nd\fR, \fB\-\-nodaemon\fR
+Don't run the program in daemon mode, i.e. open the user
+interface. This is the default setting.
+.TP 
+\fB\-a\fR, \fB\-\-auto\fR
+Monitor cpu temperature and fan status and control
+automatically the fans. This is the default setting.
+.TP 
+\fB\-na\fR, \fB\-\-noauto\fR
 Monitor cpu temperature and fan status but don't control
 automatically the fans.
 .TP 
@@ -95,10 +104,10 @@ defines state 0 with both fans off, high threshold of 60 degrees (65 on
 battery) and low threshold -1, which is actually never reached since 0 is the
 lowest state. When the high threshold is reached the program switches to state
 1 (left low, right off) which has a high threshold of 70 degrees and a low
-threshold of 48 degrees. If the temperature drops below 48 the program will 
+threshold of 50 degrees. If the temperature drops below 50 the program will 
 switch back to state 0, if it rises above 70 it will enter state 2, and so on.
 For better operation the temperature ranges should be overlapping with an
-hysteresis of at least 10 degree, i.e. 1={50 70},2={60 80} is better than
+hysteresis of at least 10 degrees, i.e. 1={50 70},2={60 80} is better than
 1={50 70},2={70 80}. It must be rembered that the low threshold of state 0
 must be -1 and the high threshold of state 3 must be 128.
 .LP
@@ -107,6 +116,13 @@ speed of the missing fan, for example:
 .IP
 set config(2) {{1 -}  60  80  65  85}
 .LP 
+This program can be used by normal users as Gnome panel applet or started
+as daemon by an init script. Under Debian GNU/Linux it is possible to start
+the daemon automatically by creating an /etc/i8kmon configfile containing
+the line "set config(daemon) 1". Note the the /etc/i8kmon configfile is not
+installed by the i8kutils package because the program is designed to be run
+by normal users. If you want to use it as daemon you must create the config
+file yourself.
 .SH "FILES"
 .LP 
 \fI/proc/i8k\fP

@@ -1,0 +1,74 @@
+#!/bin/sh
+#
+# i8kutils	Dell Inspiron volume buttons monitor
+#
+#		Written by Miquel van Smoorenburg <miquels@cistron.nl>.
+#		Modified for Debian GNU/Linux
+#		by Ian Murdock <imurdock@gnu.ai.mit.edu>.
+#
+#		Modified for i8kutils by Massimo Dal Zotto <dz@debian.org>
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/i8kbuttons
+CONFIGFILE=/etc/i8kbuttons
+PROC_I8K=/proc/i8k
+NAME=i8kbuttons
+DESC="Dell Inspiron volume buttons monitor"
+
+set -e
+
+test -x $DAEMON || exit 0
+test -e $CONFIGFILE && . $CONFIGFILE
+
+case "$1" in
+    start)
+	test -e "$PROC_I8K" || exit 0
+	test -n "$I8KBUTTONS_UP_CMD" -o \
+	     -n "$I8KBUTTONS_DOWN_CMD" -o \
+	     -n "$I8KBUTTONS_MUTE_CMD" \
+	  || exit 0
+	echo -n "Starting $DESC: $NAME"
+	start-stop-daemon --start --quiet --pidfile /var/run/$NAME.pid \
+	    --exec $DAEMON --background --make-pidfile -- \
+	    --up "$I8KBUTTONS_UP_CMD" \
+	    --down "$I8KBUTTONS_DOWN_CMD" \
+	    --mute "$I8KBUTTONS_MUTE_CMD" \
+	    --timeout "${I8KBUTTONS_TIMEOUT:-100}" \
+	    --repeat "${I8KBUTTONS_REPEAT:-0}"
+	echo "."
+	;;
+    stop)
+	echo -n "Stopping $DESC: $NAME "
+	start-stop-daemon --oknodo --stop --quiet --pidfile /var/run/$NAME.pid
+	echo "."
+	rm -f /var/run/$NAME.pid
+	;;
+    restart|reload|force-reload)
+	# Reload is not supported by i8kbuttons
+	test -e "$PROC_I8K" || exit 0
+	test -n "$I8KBUTTONS_UP_CMD" -o \
+	     -n "$I8KBUTTONS_DOWN_CMD" -o \
+	     -n "$I8KBUTTONS_MUTE_CMD" \
+	  || exit 0
+	echo -n "Restarting $DESC: $NAME"
+	start-stop-daemon --oknodo --stop --quiet \
+	    --pidfile /var/run/$NAME.pid
+	rm -f /var/run/$NAME.pid
+	sleep 1
+	start-stop-daemon --start --quiet --pidfile /var/run/$NAME.pid \
+	    --exec $DAEMON --background --make-pidfile -- \
+	    --up "$I8KBUTTONS_UP_CMD" \
+	    --down "$I8KBUTTONS_DOWN_CMD" \
+	    --mute "$I8KBUTTONS_MUTE_CMD" \
+	    --timeout "${I8KBUTTONS_TIMEOUT:-100}" \
+	    --repeat "${I8KBUTTONS_REPEAT:-0}"
+	echo "."
+	;;
+    *)
+	N=/etc/init.d/$NAME
+	echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

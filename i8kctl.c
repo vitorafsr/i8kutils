@@ -272,7 +272,7 @@ status()
 void
 usage(char *progname)
 {
-    printf("Usage: %s "
+    printf("Usage: %s [-v] "
 	   "[fan [<l> <r>] | speed | version | bios | id | temp | ac | fn]\n",
 	   progname);
 }
