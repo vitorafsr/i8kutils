@@ -1,0 +1,66 @@
+.TH i8kbuttons 1 "18 March 2002" "Massimo Dal Zotto" Utilities
+.SH "NAME"
+.LP 
+I8kbuttons \- Monitor the status of Fn\-buttons on Dell Inspiron laptops.
+.SH "SYNTAX"
+.LP 
+i8kbuttons [\fI<options>\fP]
+.SH "DESCRIPTION"
+.LP 
+The i8kbuttons daemon monitors the status of the two volume buttons
+of the Inspiron 8000 and the corresponding Fn\- combinations.
+.LP 
+When a button is pressed the daemon runs the corresponding command
+specified in the command\-line options. By specifying the proper
+commnds it is then possible to control the volume of the sound mixer
+or run any other command you like.
+.LP 
+It must be noted that although the program has default commands for the
+various buttons there are no standard mixer command shipped with the many
+Linux distributions which can change volume incrementally and support
+the mute/restore function.
+The default commands must therefore be overriden with specific commands
+depending on which mixer software is installed. Example:
+.IP
+i8kbuttons -u "aumix -v +10" -d "aumix -v -10" -m "aumix -v 0" -r 100 -v
+.SH "OPTIONS"
+.LP 
+The program accepts the following command\-line options:
+.LP 
+.TP 
+\fB\-v\fR, \fB\-\-verbose\fR
+Verbose mode, show all commands executed.
+.TP 
+\fB\-u\fR, \fB\-\-up\fR <\fIcommand\fP>
+Specifies the command to be executed when the VolumeUp button is pressed.
+.TP 
+\fB\-d\fR, \fB\-\-down\fR <\fIcommand\fP>
+Specifies the command to be executed when the VolumeDown button is pressed.
+.TP 
+\fB\-m\fR, \fB\-\-mute\fR <\fIcommand\fP>
+Specifies the command to be executed when the VolumeOn/Off button is pressed.
+.TP 
+\fB\-t\fR, \fB\-\-timeout\fR <\fImilliseconds\fP>
+Specifies the interval in milliseconds at which the daemon checks the
+button status. Useful values are in the range 50\-200. Default is 100.
+.TP 
+\fB\-r\fR, \fB\-\-repeat\fR <\fImilliseconds\fP>
+Specifies the autorepeat interval in milliseconds. Useful values are in the
+range 100\-1000. Default is 0, i.e. no autorepeat. Autorepeat starts after
+an initial delay of 250 milliseconds. 
+.LP 
+.SH "FILES"
+.LP 
+\fI/proc/i8k\fP
+.SH "AUTHORS"
+.LP 
+Massimo Dal Zotto <dz@debian.org>
+.SH "COPYRIGHT"
+.LP 
+i8kbuttons and all the i8kutils programs, scripts and other files are
+distributed under the GNU General Public License (GPL).
+On Debian GNU/Linux systems, the complete text of the GNU General
+Public License can be found in `/usr/share/common-licenses/GPL'.
+.SH "SEE ALSO"
+.LP 
+i8kctl(1), i8kmon(1)

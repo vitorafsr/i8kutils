@@ -1,0 +1,12 @@
+! /etc/X11/Xmodmap
+
+! Multimedia buttons on Inspiron 8000, used by sawfish to control xmms
+keycode 129 = F31
+keycode 130 = F32
+keycode 131 = F33
+keycode 132 = F34
+
+! Fn key and Volume buttons, available only if SMM kbd handling is disabled
+keycode 137 = F27
+keycode 138 = F28
+keycode 139 = F29

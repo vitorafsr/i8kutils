@@ -1,0 +1,85 @@
+#!/bin/sh
+#
+# Test the Inspiron SMM BIOS.
+#
+# From smm.c:
+#
+# WARNING!!! READ CAREFULLY BEFORE USING THIS PROGRAM!!!
+#
+# THIS PROGRAM IS VERY DANGEROUS. IT CAN CRASH YOUR COMPUTER, DESTROY DATA
+# ON THE HARDISK, CORRUPT THE BIOS, PHYSICALLY DAMAGE YOUR HARDWARE AND
+# MAKE YOUR COMPUTER TOTALLY UNUSABLE.
+#
+# DON'T USE THIS PROGRAM UNLESS YOU REALLY KNOW WHAT YOU ARE DOING. I WILL
+# NOT BE RESPONSIBLE FOR ANY DIRECT OR INDIRECT DAMAGE CAUSED BY USING THIS
+# PROGRAM.
+
+PROG_VERSION="v1.6 12/11/2001"
+
+echo "smm-test $PROG_VERSION"; echo
+
+if [ ! -x ./smm ]; then
+    echo "smm program not found" >&2
+    exit 1
+fi
+
+if [ $EUID != 0 ]; then
+    echo "you must be root to run this script" >&2
+    exit 1
+fi
+
+echo "DELL signature, should return eax=44494147 and edx=44454c4c"
+./smm ffa3
+
+echo "BIOS version, should return eax=00413137 or something like that"
+./smm 00a6
+
+echo "Power status, should return al=05 on ac power, 01 on battery"
+./smm 0069
+
+echo "Cpu temperature, should return al=temperature"
+./smm 10a3
+
+echo "Set right fan to low speed"
+./smm 01a3 0100
+sleep 3
+
+echo "Set right fan to high speed"
+./smm 01a3 0200
+sleep 3
+
+echo "Get right fan status, should return al=status"
+./smm 00a3 0000
+
+echo "Get right fan speed, should return al=rpm/30"
+./smm 02a3 0000
+
+echo "Set right fan off"
+./smm 01a3 0000
+sleep 1
+
+echo "Set left fan to low speed"
+./smm 01a3 0101
+sleep 3
+
+echo "Set left fan to high speed"
+./smm 01a3 0201
+sleep 3
+
+echo "Get left fan status, should return al=status"
+./smm 00a3 0001
+
+echo "Get left fan speed, should return al=rpm/30"
+./smm 02a3 0001
+
+echo "Set left fan off"
+./smm 01a3 0001
+sleep 1
+
+echo "Volume buttons, ah should change if a button is pressed"
+for i in `seq 1 10`; do
+    sleep 1
+    ./smm 0025
+done
+
+# end of file

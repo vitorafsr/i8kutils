@@ -1,0 +1,131 @@
+i8kutils (1.12) frozen unstable; urgency=low
+
+  * In i8k module added restricted fan control option.
+
+  * In i8kmon added Reload and Exit commands to the applet menu.
+
+  * In i8kmon added option to display temperature in fahrenheit.
+
+  * If i8kmon exit program it the applet window is unexpectedly destroyed.
+
+  * Updated i8kmon.conf, manpages and README.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Mon, 18 Mar 2002 17:18:49 +0100
+
+i8kutils (1.11) frozen unstable; urgency=low
+
+  * Added /proc/acpi support and setmixer.sh example.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Mon, 11 Feb 2002 10:04:27 +0100
+
+i8kutils (1.10) frozen unstable; urgency=low
+
+  * Removed version check in /proc/apm.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Sun, 10 Feb 2002 23:17:26 +0100
+
+i8kutils (1.9) frozen unstable; urgency=low
+
+  * Fixed high temperature display in i8kmon.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Sat, 29 Dec 2001 16:38:01 +0100
+
+i8kutils (1.8) frozen unstable; urgency=low
+
+  * Added Xmodmap and 40custom_load-xmodmap examples, updated README file.
+    Closes: Bug#123801.
+
+  * Fixed Spelling error in description.
+    Closes: Bug#124745.
+ 
+ -- Massimo Dal Zotto <dz@debian.org>  Tue, 18 Dec 2001 21:53:26 +0100
+
+i8kutils (1.7) unstable; urgency=low
+
+  * Changed i8k_probe to allow detection of SMM BIOS on laptops which
+    don't support all the SMM functions used by the driver.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Wed, 21 Nov 2001 12:00:58 +0100
+
+i8kutils (1.6) unstable; urgency=low
+
+  * In i8k_smm() return -EINVAL if the returned eax is unchanged.
+
+  * In smm-test script test both fans.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Mon, 12 Nov 2001 11:26:23 +0100
+
+i8kutils (1.5) unstable; urgency=low
+
+  * In i8k module changed i8k probe to work on any Inspiron or Latitude
+    laptop. For performance reasons don't report ac status in /proc/i8k
+    unless the module is loaded with the "power_status=1" parameter.
+
+  * In i8kmon read ac status from /proc/apm if not available in /proc/i8k.
+    Changed default timeout to 5 seconds.
+
+  * Changed i8kmon config file format.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Sat, 10 Nov 2001 13:21:29 +0100
+
+i8kutils (1.4) unstable; urgency=low
+
+  * In i8k module get bios_version and bios_machine_id from DMI table.
+    Implemented the I8K_MACHINE_ID ioctl.
+
+  * In i8kmon added simple config menu activated with <Button-1>.
+    Added suspend option to allow unloading the module while i8kmon
+    is running.
+
+  * If fan speed is not available (on I4000) assume fans are running.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Thu,  8 Nov 2001 12:19:17 +0100
+
+i8kutils (1.3) unstable; urgency=low
+
+  * In i8k.c use strlen() instead of sizeof() for signature comparisons.
+
+  * In i8kmon added binding for <Button-2> to fan buttons and fixed bug
+    in stuck fan detection.
+
+  * In i8kbuttons added options --verbose and --repeat. Ignored SIGCHLD
+    signal to avoid the zombie processes problem.
+
+  * Added smm-test script.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Wed,  7 Nov 2001 13:19:07 +0100
+
+i8kutils (1.2) unstable; urgency=low
+
+  * Rewritten from scratch the i8kmon utility.
+
+  * Changed Fn-buttons constants for compatibilty with I8100.
+
+  * Changed FN_VOL_MUTE from 3 to 4. New i8kbuttons daemon is compatible
+    with previous kernel module.
+
+  * Changed check for I8000 into check for generic Inspiron.
+
+  * Added KERN_INFO to all printk instructions.
+
+  * Added README file and manpages.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Tue,  6 Nov 2001 10:54:03 +0100
+
+i8kutils (1.1) unstable; urgency=low
+
+  * Added ioctl support to /proc/i8k.
+
+  * Added i8kbuttons and i8kmon programs.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Fri,  2 Nov 2001 13:34:33 +0100
+
+i8kutils (1.0) unstable; urgency=low
+
+  * Initial release.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Sun, 21 Oct 2001 14:01:56 +0200
+
+Local variables:
+mode: debian-changelog
+End:

@@ -1,0 +1,17 @@
+# /etc/X11/Xsession.d/40custom_xmodmap
+
+# Load system-wide Xmodmap
+if [ -x /usr/bin/X11/xmodmap ]; then
+  if [ -f $SYSMODMAP ]; then
+    xmodmap $SYSMODMAP
+  fi
+fi
+
+# Load user .Xmodmap
+if [ -x /usr/bin/X11/xmodmap ]; then
+  if grep -qs ^allow-user-modmap $OPTIONFILE; then
+    if [ -f $USRMODMAP ]; then
+      xmodmap $USRMODMAP
+    fi
+  fi
+fi

@@ -1,0 +1,21 @@
+Dell laptop support
+CONFIG_I8K
+  This adds a driver to safely access the System Management Mode
+  of the CPU on the Dell Inspiron and Latitude laptops. The System
+  Management Mode is used to read cpu temperature, cooling fan
+  status and Fn-keys status on Dell laptops. It can also be used
+  to switch the fans on and off.
+
+  The driver has been developed and tested on an Inspiron 8000
+  but it should work on any Dell Inspiron or Latitude laptop.
+  You can force loading on unsupported models by passing the
+  parameter `force=1' to the module. Use at your own risk.
+
+  For more information on this driver and for utilities that make
+  use of the module see the I8K Linux Utilities web site at:
+
+    http://www.debian.org/~dz/i8k/
+
+  Say Y if you intend to run this kernel on a Dell laptop.
+  Say N otherwise.
+

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<!--
+  Hotkeys configuration file for Dell Inspiron notebooks. Copy this file
+  to /usr/share/hotkeys/i8k.def and set Kbd=i8k in /etc/hotkeys.conf.
+-->
+
+<CONFIG model="Dell Inspiron Notebook">
+
+  <Play      keycode="129"/>
+  <Stop      keycode="130"/>
+  <PrevTrack keycode="131"/>
+  <NextTrack keycode="132"/>
+
+</CONFIG>

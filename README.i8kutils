@@ -1,0 +1,452 @@
+I8KUTILS FOR LINUX - VERSION 1.12
+=================================
+
+This package contains a kernel driver and user-space programs for accessing
+the SMM BIOS of Dell Inspiron and Latitude laptops. The SMM BIOS is used on
+many recent laptops to implement APM functionalities and to access custom
+hardware, for example cooling fans and volume buttons.
+
+The kernel driver and the utilities included in the package can report the
+following information about the hardware:
+
+    * BIOS version
+
+    * serial number
+
+    * CPU temperature
+
+    * fan status
+
+    * fan rotation speed (only on some models)
+
+    * ac power status
+
+    * volume buttons status (not the multimedia buttons)
+
+The package include also the following utilities:
+
+    * i8kctl	 - interface to the kernel driver
+
+    * i8kmon	 - temperature monitor with automatic or manual fan control
+
+    * i8kbuttons - monitors volume buttons and runs user-defined commands
+
+The i8kctl can be used to manually control the fan speed, like my old i8kfan
+utility, but that program is now obsoleted by the new i8kmon program which
+can continuously monitor the CPU temperature and control automatically the
+fans. The automatic fan control feature of i8kmon does essentially the same
+job of the BIOS. The only difference is that my program works.
+
+The latest version of the i8kutils package, including the latest i8k kernel
+driver, can be downloaded from:
+
+    http://www.debian.org/~dz/i8k/
+
+The driver works only with kernel 2.4.x. There will not be a porting on older
+kernels.
+
+
+LICENCE
+=======
+
+This software is released under the terms of the GNU General Public
+Licence.
+
+   Copyright (C) 2001 Massimo Dal Zotto <dz@debian.org>
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+
+On Debian GNU/Linux systems, the complete text of the GNU General
+Public License can be found in `/usr/share/common-licenses/GPL'.
+
+
+THE KERNEL DRIVER
+=================
+
+Since version 2.4.14-pre8 of the kernel the i8k SMM driver is included in
+the core kernel distribution. The driver source included in this package is
+needed only if you want to compile the module for an older kernel version
+or if you need a more recent version then the one in the Linux kernel.
+
+The driver has been reported to work on the following hardware:
+
+    Inspiron 8000 (BIOS A17)
+    Inspiron 8100 (BIOS A04)
+    Inspiron 4000 (BIOS A10), no fan speed
+    Inspiron 4000 (BIOS A18)
+    Inspiron 4100
+    Inspiron 3800 (BIOS A14), no fan speed
+    Latitude C600 (BIOS A17)
+    Latitude C800 (BIOS A17)
+    Latitude CPiA (BIOS A14), no fan speed
+    Latitude CPx J750GT (BIOS A13), no fan speed
+
+but will probably work on any recent Dell laptop. Note that on some models
+or BIOS versions the fan speed is not available. On some BIOS also the BIOS
+version is not available from SMM but the driver is able to obtain it using
+another method.
+
+The driver seems not working on the following models:
+
+    Inspiron 2500 (BIOS A10)
+    Inspiron 3200
+    Inspiron 5000e (BIOS A06)
+    Inspiron 7000
+    Inspiron 7500
+
+On loading the module checks for the presence of an Dell Inspiron or Latitude
+laptop and refuses to load if running on an unknown system. You can however
+force loading of the driver, for testing it on unknown hardware, by passing
+the "force=1" option to insmod:
+
+    insmod i8k.o force=1
+
+Note that force loading of the module on unknown hardware could crash your
+system and will anyway 'taint' the kernel. The force option is provided
+only for testing purposes or for loading on systems where the BIOS version
+can't be read from the SMM BIOS.
+
+The information provided by the kernel driver can be accessed by simply
+reading the /proc/i8k file. For example:
+
+    $ cat /proc/i8k
+    1.0 A17 2J59L02 52 2 1 8040 6420 1 2
+
+The fields read from /proc/18k are:
+
+    1.0 A17 2J59L02 52 2 1 8040 6420 1 2
+    |   |   |       |  | | |    |    | |
+    |   |   |       |  | | |    |    | +------- 10. buttons status
+    |   |   |       |  | | |    |    +--------- 9.  ac status
+    |   |   |       |  | | |    +-------------- 8.  right fan rpm
+    |   |   |       |  | | +------------------- 7.  left fan rpm
+    |   |   |       |  | +--------------------- 6.  right fan status
+    |   |   |       |  +----------------------- 5.  left fan status
+    |   |   |       +-------------------------- 4.  CPU temperature (Celsius)
+    |   |   +---------------------------------- 3.  serial number
+    |   +-------------------------------------- 2.  BIOS version
+    +------------------------------------------ 1.  /proc/i8k format version
+
+For performance reasons the /proc/i8k doesn't report by default the ac status
+since this SMM call takes a long time to execute and is not really needed.
+If you want to see the ac status in /proc/i8k you must explictitly enable
+this option by passing the "power_status=1" parameter to insmod. If ac status
+is not available -1 is printed instead.
+
+The driver provides also an ioctl interface which can be used to obtain the
+same information and to control the fan status. The ioctl interface can be
+accessed from C programs or from shell using the i8kctl utility. See the
+source file i8kctl.c for more information on how to use the ioctl interface.
+
+Version 1.12 of the driver adds a new 'restricted' option. If the module
+is loaded with restricted=1 fan control will be allowed only to processes
+with the CAP_SYS_ADMIN capability set or processes run as root. In that
+case normal users will be able to read temperature and fan status but
+not to control the fan. If your notebook is shared with other users and
+you don't trust them you may want to use this option.
+
+
+TROUBLESHOOTING
+===============
+
+If you have problems loading the kernel module or have succesfully tested
+it on different hardware please let me know your results. Don't forget to
+include the following information:
+
+    laptop model
+    BIOS version
+    driver version
+    i8kmon version
+    kernel config file
+    kernel messages while loading the driver
+    output of "cat /proc/i8k"
+    output of the "smm-test" script included with the sources
+
+Before reporting bugs be sure to be using the latest kernel module, the one
+included in the latest i8kutils package, and the latest BIOS available for
+your laptop. Old versions of the driver don't work correctly and old BIOS
+versios don't support all the SMM functions used by the driver.
+
+
+THE I8KCTL UTILITY
+==================
+
+The i8kctl utility provides a command-line interface to the i8k kernel driver.
+When invoked without arguments the program reports the same information which
+can be read from the /proc/i8k file.
+
+The program can take an optional argument which can be used to select only one
+of the items and to control the fan status. If invoked as i8kfan the program
+behaves like my old i8kfan utility.
+
+
+THE I8KMON APPLET
+=================
+
+The i8kmon program can be used to monitor the CPU temperature and control
+automatically the fans accordingly to user-defined temperature thresholds.
+The program can be run as daemon or as an applet which can be embedded in
+the Gnome panel (No, I don't use KDE). The program requires Tcl/Tk (>= 8.0).
+
+The program has builtin defaults and temperature thresholds but users can
+specify their own settings in configuration files /etc/i8kmon and ~/.i8kmon.
+The daemon defines 4 states with different fan speeds ({0 0}, {1 0}, {1 1},
+{2 2}) and for each state are defined the temperature thresholds which cause
+the switching to a higher or lower state. Furthermore each state can have
+different thresholds for operation on ac power or battery. 
+For example the following configuration:
+
+    set config(0) {{0 0}  -1  60  -1  65}
+    set config(1) {{1 0}  50  70  55  75}
+    set config(2) {{1 1}  60  80  65  85}
+    set config(3) {{2 2}  70 128  75 128}
+
+defines state 0 with both fans off, high threshold of 60 degrees (65 on
+battery) and low threshold -1, which is actually never reached since 0 is the
+lowest state. When the high threshold is reached the program switches to state
+1 (left low, right off) which has a high threshold of 70 degrees and a low
+threshold of 48 degrees. If the temperature drops below 48 the program will 
+switch back to state 0, if it rises above 70 it will enter state 2, and so on.
+For better operation the temperature ranges should be overlapping with an
+hysteresis of at least 10 degree, i.e. 1={50 70},2={60 80} is better than
+1={50 70},2={70 80}. It must be rembered that the low threshold of state 0
+must be -1 and the high threshold of state 3 must be 128.
+
+If your laptop has only one fan you should specify a '-' instead of the fan
+speed of the missing fan, for example:
+
+    set config(2) {{1 -}  60  80  65  85}
+
+NOTE: it has been reported that on some Linux distributions i8kmon exits
+with an error like this:
+
+    can't find package Tk
+        while executing
+    "package require Tk"
+
+This is not a bug in i8kmon. It means that Tcl/Tk files are not installed
+correctly on your system and the Tk library can't be dynamically loaded
+from Tcl. In this case you can run i8kmon with the command:
+
+    wish /usr/bin/i8kmon -- [options...]
+
+You should also report the bug to the maintainer of the Tcl/Tk packages
+included in your Linux distribution. A quick fix for the problem could
+also be adding the following line to /usr/lib/tk8.3/pkgIndex.tcl:
+
+    package ifneeded Tk 8.3 [list load "/usr/lib/libtk8.3.so.1" Tk]
+
+This works on Debian and maybe on other Linux distributions.
+
+
+THE I8KBUTTONS DAEMON
+=====================
+
+The i8kbuttons daemon monitors the status of the two volume buttons of the
+Inspiron or the corresponding Fn-keys. When a volume button press is
+detected the daemon runs a corresponding command specified in the command-
+line options. By specifying the proper commnds it is thus possible to control
+the volume of the sound mixer or run any other command, for example switch
+to vt1 if X freezes.
+
+On some models the volume buttons are not present and only the Fn-keys are
+available (Fn-PageUp = Volume Up, Fn-PageDn = Volume Down, Fn-End = Mute).
+
+It should be noted that although the program has default commands for the
+various buttons there isn't a standard command shipped with any Linux
+distributions which can be used to change the volume incrementally and to
+implement the Mute/Restore function. The default commands are just examples
+and must be overriden with your specific commands using the command-line
+options.
+
+
+THE I8000 MULTIMEDIA BUTTONS
+============================
+
+The Inspiron 8000 has also four "multimedia" buttons (Start, Stop, Rew and
+Fwd) which are not controlled by the SMM BIOS and are directly usable under X
+or the console. To map the buttons under console you should use the programs
+included in package console-tools. To use the mm buttons under X use the xev
+program to see the scancodes and map them to the appropriate keysyms.
+For example on my I8000 I have mapped:
+
+    keycode 129 = F31
+    keycode 130 = F32
+    keycode 131 = F33
+    keycode 132 = F34
+
+and I have configured sawfish to execute 'run-shell-command "xmms --play"'
+when F31 is pressed. If you have the sawfish-xmms package installed you can
+use instead the sawfish command 'xmms-play' which is faster. Similar commands
+are available for the Stop, Rew and Fwd functions.
+
+On a Debian (>=woody) system it is possible to set up a system-wide Xmodmap
+which is loaded automatically for all users when the X server is started.
+All you have to do is to create a file /etc/X11/Xsession.d/40custom_xmodmap
+like this:
+
+    # Load system-wide Xmodmap
+    if [ -x /usr/bin/X11/xmodmap ]; then
+      if [ -f $SYSMODMAP ]; then
+        xmodmap $SYSMODMAP
+      fi
+    fi
+    
+    # Load user .Xmodmap
+    if [ -x /usr/bin/X11/xmodmap ]; then
+      if grep -qs ^allow-user-modmap $OPTIONFILE; then
+        if [ -f $USRMODMAP ]; then
+          xmodmap $USRMODMAP
+        fi
+      fi
+    fi
+
+and a system-wide /etc/X11/Xmodmap with the following lines:
+
+    ! Multimedia buttons on Inspiron 8000, used by sawfish to control xmms
+    keycode 129 = F31
+    keycode 130 = F32
+    keycode 131 = F33
+    keycode 132 = F34
+
+or let each user create his own ~/.Xmodmap like the above file if you prefer
+per-user customization. See the Xsession man page for more information.
+
+Another way to use the buttons without modifying the X keymap is to use the
+`hotkeys' package. In this case you have to add the following lines to its
+configuration file:
+
+    <?xml version="1.0"?>
+    <CONFIG model="Dell Inspirion 8100 Notebook">
+      <Play      keycode="129"/>
+      <Stop      keycode="130"/>
+      <PrevTrack keycode="131"/>
+      <NextTrack keycode="132"/>
+    </CONFIG>
+
+Personally I prefer to use sawfish-xmms because it seems faster and doesn't
+require an additional daemon, but if you are using a different window-manager
+you may want to try hotkeys.
+
+
+COMPILATION
+===========
+
+To compile the programs type "make". To install "make install", as root.
+
+To compile the kernel module, if it is not already included in the kernel,
+type "make module". By default the module compiles without symbol versions
+and can thus be loaded on any 2.4.x kernel with "insmod -f i8k.o".
+If you want a versioned module uncomment the MODVERSIONS line in Makefile
+or make the module with "make modversion". You can load and unload the module
+with "make insmod" and "make rmmod".
+
+If you are using kernel 2.4.14 or later you can have the module compiled
+automatically with the kernel by enabling the following option in the kernel
+configuration:
+
+    CONFIG_I8K=m
+
+You can also include the i8k code directly in the kernel but I don't recommend
+it because it makes debugging more difficult.
+
+
+BIOS BUGS
+=========
+
+Yes, the BIOS has many bugs. I have found the following in I8K BIOS A17:
+
+1) CPU temperature bug
+
+Sometimes the BIOS reports a temperature of 153 (0x99) degrees, which is
+clearly out of scale. It seems that it happens when the BIOS is changing
+the fan speed.
+
+# while true; do ./smm 10a3; done | grep ' 0'
+...
+eax=0000004b ebx=00004c80 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
+eax=0000004c ebx=00004c80 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
+eax=00000099 ebx=00003a80 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
+eax=0000004c ebx=00005243 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
+...
+eax=00000051 ebx=00005243 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
+eax=00000052 ebx=00005243 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
+eax=00000099 ebx=00003a80 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
+eax=00000052 ebx=00005746 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
+...
+
+2) Fan speed bug with stuck fan
+
+If for some reason a fan is stuck the BIOS reports a speed of 1920rpm instead
+of 0 as it should be. In the same condition it sometimes reports also a speed
+of 7200rpm, but this seems much more infrequent.
+
+# ./smm 1a3 200
+eax=000001a3 ebx=00000200 ecx=00000000 edx=00000000 esi=00000000 edi=00000000
+eax=00000000 ebx=00000200 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
+# ./smm a3 0
+eax=000000a3 ebx=00000000 ecx=00000000 edx=00000000 esi=00000000 edi=00000000
+eax=00000002 ebx=00000000 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
+# ./smm 2a3 0
+eax=000002a3 ebx=00000000 ecx=00000000 edx=00000000 esi=00000000 edi=00000000
+eax=00000040 ebx=00000000 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
+        ^^^^
+	1920rpm instead of 0
+
+
+CONTRIBUTORS
+============
+
+Contributors are listed here, in alphabetical order.
+
+    Pablo Bianucci <pbian@physics.utexas.edu>
+
+	support for /proc/acpi
+
+    Jonathan Buzzard <jonathan@buzzard.org.uk>
+
+	basic information on the SMM BIOS and the Toshiba SMM driver.
+	Asm code for calling the SMM BIOS on the I8K. Without his help
+	this work wouldn't have been possible.
+
+    Stephane Jourdois <stephane@tuxfinder.org>
+
+	patches for correctly interpreting buttons status in the i8k driver
+
+    Marcel J.E. Mol <marcel@mesa.nl>
+
+	patches for the --repeat option in the i8kbuttons util
+
+    Gianni Tedesco <gianni@ecsc.co.uk>
+
+	patch to restrict fan contol to SYS_ADMIN capability
+
+    David Woodhouse <dwmw2@redhat.com>
+
+	for suggesting how to avoid the zombies in i8kbuttons
+
+and many others who tested the driver on their hardware and sent me reports.
+
+Other Dell laptop utilities are available at the follwing URLs:
+
+    http://www.diefer.de/i8kfan/		(windows)
+    http://www.geocities.com/fanonbsd/		(FreeBSD/NetBSD/OpenBSD)
+
+No credits to DELL Computer who has always refused to give support on Linux
+or provide any useful information on the I8K buttons and their buggy BIOS.
+
+
+-- 
+Massimo Dal Zotto <dz@debian.org>

@@ -1,0 +1,653 @@
+#!/bin/sh
+#
+# i8kmon -- Monitor cpu temperature and fan status on Dell Inspiron laptops.
+#	    The program can be run in background as daemon or under X as an
+#	    applet swallowed in the gnome panel.
+#
+# Copyright (C) 2001  Massimo Dal Zotto <dz@debian.org>
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+#\
+exec tclsh $0 -- "$@"
+
+set PROG_VERSION "v1.12 18/03/2002"
+
+array set config {
+    sysconfig	/etc/i8kmon
+    userconfig	~/.i8kmon
+    proc_i8k	/proc/i8k
+    proc_apm	/proc/apm
+    proc_acpi	/proc/acpi/ac_adapter/0/status
+    i8kfan	/usr/bin/i8kfan
+    geometry	{}
+    auto	1
+    daemon	0
+    verbose	0
+    timeout	5
+    unit	C
+    t_high	80
+    min_speed	2000
+    0		{{0 0}  -1  60  -1  65}
+    1		{{1 0}  50  70  55  75}
+    2		{{1 1}  60  80  65  85}
+    3		{{2 2}  70 128  75 128}
+}
+
+array set status {
+    left	{}
+    right	{}
+    timer	{}
+    apm_timer	0
+    state	0
+    temp	0
+    lstate	0
+    rstate	0
+    lspeed	0
+    rspeed	0
+    lstuck	0
+    rstuck	0
+    ac		0
+    t_low	0
+    t_high	0
+    ui		0
+    suspend	0
+}
+
+proc read_config {} {
+    global config
+    global status
+
+    # array set BIOS_defaults {
+    #	0	{{0 0}  -1  76  -1  76}
+    #	1	{{1 0}  67  82  67  82}
+    #	2	{{1 1}  70  87  70  87}
+    #	3	{{2 2}  75 128  75 128}
+    # }
+
+    array set defaults {
+	0	{{0 0}  -1  60  -1  65}
+	1	{{1 0}  50  70  55  75}
+	2	{{1 1}  60  80  65  85}
+	3	{{2 2}  70 128  75 128}
+    }
+
+    foreach file [list $config(sysconfig) $config(userconfig)] {
+	if {[file exists $file]} {
+	    if {$config(verbose) != 0} {
+		puts "# reading $file"
+	    }
+	    source $file
+	}
+    }
+
+    set t_high 0
+    foreach key {0 1 2 3} {
+	if {![info exists config($key)]} {
+	    set config($key) $defaults($key)
+	}
+	set fans  [lindex $config($key) 0]
+	set lo_ac [lindex $config($key) 1]
+	set hi_ac [lindex $config($key) 2]
+	set lo_bt [lindex $config($key) 3]
+	set hi_bt [lindex $config($key) 4]
+	if {$hi_bt == {}} { set hi_bt [expr $hi_ac + 5] }
+	if {$lo_bt == {}} { set lo_bt [expr $lo_ac +10] }
+	if {$hi_ac < 128 && $hi_ac > $t_high} { set t_high $hi_ac }
+	if {$hi_bt < 128 && $hi_bt > $t_high} { set t_high $hi_bt }
+	set config($key) [list $fans $lo_ac $hi_ac $lo_bt $hi_bt]
+    }
+    if {$config(t_high) == {} || $config(t_high) == 0} {
+	set config(t_high) $t_high
+    }
+    set status(t_high) [lindex $config(0) 1]
+}
+
+proc status_timer {} {
+    global config
+    global status
+
+    # Reschedule status timer
+    catch {after cancel $status(timer)}
+    set status(timer) [after [expr $config(timeout)*1000] {status_timer}]
+
+    check_status
+}
+
+proc check_status {} {
+    global config
+    global status
+
+    if {$status(suspend) == 1} {
+	close_procfs
+	return
+    }
+
+    if {![read_i8k_status]} {
+	return
+    }
+
+    if {$config(auto) == 1} {
+	fan_control
+    }
+
+    if {$status(ui) == 1} {
+	update_ui
+    }
+}
+
+proc read_i8k_status {} {
+    global config
+    global status
+
+    if {![info exists status(proc_i8k)] && ![open_proc_i8k]} {
+	return 0
+    }
+
+    set info [seek $status(proc_i8k) 0; read -nonewline $status(proc_i8k)]
+    set status(temp)   [lindex $info 3]
+    set status(lstate) [lindex $info 4]
+    set status(rstate) [lindex $info 5]
+    set status(lspeed) [lindex $info 6]
+    set status(rspeed) [lindex $info 7]
+
+    # If AC status is not available read it from /proc/apm
+    if {[set ac [lindex $info 8]] >= 0} {
+	set status(ac) $ac
+    } else {
+	read_ac_status
+    }
+
+    # If fan speed is not available (on I4000) assume fans are running
+    if {$status(lspeed) < 0} { set status(lspeed) $config(min_speed) }
+    if {$status(rspeed) < 0} { set status(rspeed) $config(min_speed) }
+
+    if {$config(verbose) > 0} {
+	set info [lreplace $info 8 8 $status(ac)]
+	puts "[clock seconds] $info"
+    }
+
+    return 1
+}
+
+proc read_ac_status {} {
+    global config
+    global status
+
+    # Read ac status once per minute
+    if {[incr status(apm_timer) -1] > 0} {
+	return 1
+    }
+    set status(apm_timer) [expr 60 / $config(timeout)]
+
+    if {[info exists status(proc_apm)] || [file exists $config(proc_apm)]} {
+	if {[read_apm_status]} return
+    }
+    if {[info exists status(proc_acpi)] || [file exists $config(proc_acpi)]} {
+	if {[read_acpi_status]} return
+    }
+    return 0
+}
+
+proc read_apm_status {} {
+    global config
+    global status
+
+    if {![info exists status(proc_apm)] && ![open_proc_apm]} {
+	return 0
+    }
+
+    set info [seek $status(proc_apm) 0; read -nonewline $status(proc_apm)]
+    if {[lindex $info 3] == "0x01"} {
+	set status(ac) 1
+    } else {
+	set status(ac) 0
+    }
+
+    if {$config(verbose) > 0} {
+	puts "[clock seconds] $info"
+    }
+
+    return 1
+}
+
+proc read_acpi_status {} {
+    global config
+    global status
+
+    if {![info exists status(proc_acpi)] && ![open_proc_acpi]} {
+	return 0
+    }
+
+    set info [seek $status(proc_acpi) 0; read -nonewline $status(proc_acpi)]
+    if {[lindex $info 1] == "on-line"} {
+	set status(ac) 1
+    } else {
+	set status(ac) 0
+    }
+
+    if {$config(verbose) > 0} {
+	puts "[clock seconds] $info"
+    }
+
+    return 1
+}
+
+proc open_proc_i8k {} {
+    global config
+    global status
+
+    if {[catch {set status(proc_i8k) [open $config(proc_i8k)]}]} {
+	return 0
+    }
+
+    if {[catch {set info [read -nonewline $status(proc_i8k)]}]} {
+	close $status(proc_i8k); unset status(proc_i8k)
+	return 0
+    }
+
+    if {[lindex $info 0] != "1.0" || [llength $info] < 10} {
+	close $status(proc_i8k); unset status(proc_i8k)
+	return 0
+    }
+
+    return 1
+}
+
+proc open_proc_apm {} {
+    global config
+    global status
+
+    if {[catch {set status(proc_apm) [open $config(proc_apm)]}]} {
+	return 0
+    }
+
+    if {[catch {set info [read -nonewline $status(proc_apm)]}]} {
+	close $status(proc_apm); unset status(proc_apm)
+	return 0
+    }
+
+    if {[llength $info] < 9} {
+	close $status(proc_apm); unset status(proc_apm)
+	return 0
+    }
+
+    return 1
+}
+
+proc open_proc_acpi {} {
+    global config
+    global status
+
+    if {[catch {set status(proc_acpi) [open $config(proc_acpi)]}]} {
+	return 0
+    }
+
+    if {[catch {set info [read -nonewline $status(proc_acpi)]}]} {
+	close $status(proc_acpi); unset status(proc_acpi)
+	return 0
+    }
+
+    return 1
+}
+
+proc close_procfs {} {
+    global status
+
+    if {[info exists status(proc_i8k)]} {
+	catch {close $status(proc_i8k)}
+	unset status(proc_i8k)
+    }
+    if {[info exists status(proc_apm)]} {
+	catch {close $status(proc_apm)}
+	unset status(proc_apm)
+    }
+    if {[info exists status(proc_acpi)]} {
+	catch {close $status(proc_acpi)}
+	unset status(proc_acpi)
+    }
+}
+
+# Automatic fan control
+#
+#    0	{{0 0}  -1  60  -1  65 }
+#    1	{{1 0}  50  70  55  75 }
+#    2	{{1 1}  60  80  65  85 }
+#    3	{{2 2}  70 128  75 128 }
+#
+proc fan_control {} {
+    global config
+    global status
+
+    set index [expr $status(ac) ? 1 : 3]
+    set state $status(state)
+    set temp  $status(temp)
+
+    while {$temp < 128 && $temp >= $status(t_high)} {
+	if {$config(verbose) > 0} {
+	    puts -nonewline "# ($temp>=$status(t_high)), "
+	}
+	incr state
+	set status(t_low)  [lindex $config($state) $index]
+	set status(t_high) [lindex $config($state) [expr $index+1]]
+	if {$config(verbose) > 0} {
+	    puts "state=$state, low=$status(t_low), high=$status(t_high)"
+	}
+    }
+
+    while {$temp > 0 && $temp <= $status(t_low)} {
+	if {$config(verbose) > 0} {
+	    puts -nonewline "# ($temp<=$status(t_low)), "
+	}
+	incr state -1
+	set status(t_low)  [lindex $config($state) $index]
+	set status(t_high) [lindex $config($state) [expr $index+1]]
+	if {$config(verbose) > 0} {
+	    puts "state=$state, low=$status(t_low), high=$status(t_high)"
+	}
+    }
+
+    set_fan $state
+}
+
+proc set_fan {{state {}}} {
+    global config
+    global status
+
+    if {$state != {}} {
+	set status(state) $state
+    }
+    set args [lindex $config($status(state)) 0]
+
+    # Default to user settings
+    set left  $status(left)
+    set right $status(right)
+
+    if {$left == {} && $status(lstate) != [lindex $args 0]} {
+	set left [lindex $args 0]
+    }
+    if {$left != {} && $left < [lindex $args 0]} {
+	set left [lindex $args 0]
+    }
+    if {$left == $status(lstate)} {
+	set left {}
+    }
+
+    if {$right == {} && $status(rstate) != [lindex $args 1]} {
+	set right [lindex $args 1]
+    }
+    if {$right != {} && $right < [lindex $args 1]} {
+	set right [lindex $args 1]
+    }
+    if {$right == $status(rstate)} {
+	set right {}
+    }
+
+    if {$left != {} || $right != {}} {
+	i8kfan $left $right
+    }
+}
+
+# Run the external i8kfan command and update fan state
+proc i8kfan {args} {
+    global config
+    global status
+
+    set cmd [linsert $args 0 exec $config(i8kfan)]
+    if {$config(verbose) > 0} {
+	puts "# $cmd"
+    }
+
+    set result [eval $cmd]
+    set status(lstate) [lindex $result 0]
+    set status(rstate) [lindex $result 1]
+}
+
+proc make_ui {} {
+    global status
+    global config
+
+    if {$config(daemon) == 1} {
+	# Daemon mode, no user interface
+	return
+    }
+    if {[info command .applet] != {}} {
+	# Applet aready existing
+	return
+    }
+
+    # Load Tk library
+    package require Tk
+    wm withdraw .
+
+    toplevel .applet -class i8kmon
+    wm protocol .applet WM_DELETE_WINDOW { exit }
+    wm command .applet i8kmon
+    wm title .applet i8kmon
+
+    if {$config(geometry) != {}} {
+	set geometry $config(geometry)
+    } else {
+	set geometry 24x24
+    }
+    if {[lindex [split $geometry x] 1] >= 36} {
+	set font fixed
+    } else {
+	set font 6x10
+    }
+    wm geometry .applet $geometry
+
+    label .applet.temp -bd 0 -padx 0 -pady 0 -text "0" -font $font \
+	    -highlightthickness 0 -width 3
+    button .applet.lfan -bd 1 -padx 0 -pady 0 -text {} -font $font \
+	    -highlightthickness 0 -command {toggle_fan left}
+    button .applet.rfan -bd 1 -padx 0 -pady 0 -text {} -font $font \
+	    -highlightthickness 0 -command {toggle_fan right}
+    bind .applet.lfan <Button-2> {toggle_fan left 2}
+    bind .applet.lfan <Button-3> {toggle_fan left 0}
+    bind .applet.rfan <Button-2> {toggle_fan right 2}
+    bind .applet.rfan <Button-3> {toggle_fan right 0}
+
+    place .applet.temp -relx 0.0 -rely 0.0 -relwidth 1.0 -relheight 0.5
+    place .applet.lfan -relx 0.0 -rely 0.5 -relwidth 0.5 -relheight 0.5
+    place .applet.rfan -relx 0.5 -rely 0.5 -relwidth 0.5 -relheight 0.5
+
+    set status(bg)       [.applet.lfan cget -bg]
+    set status(activebg) [.applet.lfan cget -activebackground]
+    set status(ui)	 1
+
+    make_menu .applet
+}
+
+proc make_menu {w} {
+    global config
+    global status
+
+    set menu $w.menu
+    menu $menu -tearoff 0
+    $menu add check -label "Auto"    -variable config(auto)
+    $menu add check -label "Verbose" -variable config(verbose)
+    $menu add check -label "Suspend" -variable status(suspend)
+    $menu add separator
+    $menu add command -label "Reload" -command { read_config; status_timer }
+    $menu add command -label "Exit"   -command { exit }
+
+    bind .applet.temp <Button-1> "tk_popup $menu %X %Y"
+}
+
+proc update_ui {} {
+    global config
+    global status
+
+    # If applet window is unexpectedly destroyed exit the program
+    if {![winfo exists .applet]} {
+	puts stderr "applet window destroyed, exit"
+	exit 1
+    }
+
+    set bg $status(bg)
+    set ab $status(activebg)
+
+    # Temperature
+    if {$status(temp) >= $config(t_high)} {
+	set fg red
+    } else {
+	set fg black
+    }
+    if {$config(unit) != "F" } {
+	.applet.temp config -text $status(temp) -fg $fg
+    } else {
+	.applet.temp config -text [expr (0+$status(temp))*9/5+32] -fg $fg
+    }
+
+    # Left button
+    if {$status(lstate) != 0 && $status(lspeed) < $config(min_speed)} {
+	incr status(lstuck)
+    } else {
+	set status(lstuck) 0
+    }
+    if {$status(lstate) == 0} {
+	.applet.lfan config -text {} -bg $bg -activebackground $ab
+    } elseif {$status(lstuck) >= 2} {
+	.applet.lfan config -text $status(lstate) -bg red -activebackground red
+    } else {
+	.applet.lfan config -text $status(lstate) -bg $bg -activebackground $ab
+    }
+
+    # Right button
+    if {$status(rstate) != 0 && $status(rspeed) < $config(min_speed)} {
+	incr status(rstuck)
+    } else {
+	set status(rstuck) 0
+    }
+    if {$status(rstate) == 0} {
+	.applet.rfan config -text {} -bg $bg -activebackground $ab
+    } elseif {$status(rstuck) >= 2} {
+	.applet.rfan config -text $status(rstate) -bg red -activebackground red
+    } else {
+	.applet.rfan config -text $status(rstate) -bg $bg -activebackground $ab
+    }
+}
+
+proc toggle_fan {fan {speed {}}} {
+    global status
+
+    if {$speed != {}} {
+	set status($fan) $speed
+    } else {
+	if {$fan == "left"} {
+	    set status($fan) $status(lstate)
+	} else {
+	    set status($fan) $status(rstate)
+	}
+	set status($fan) [expr ($status($fan)+1) % 3]
+    }
+    if {$fan == "left"} {
+	i8kfan $status($fan) {}
+    } else {
+	i8kfan {} $status($fan)
+    }
+    if {$status($fan) == 0} {
+	set status($fan) {}
+    }
+    update_ui
+}
+
+proc usage {} {
+    global argv0
+
+    regsub -all {^.*/} $argv0 {} progname
+    puts "Usage:  $progname \[<options>...]
+
+Options:
+
+    -d|--daemon			run in daemon mode without user interface
+    -n|--noauto			don't control automatically the fans
+    -v|--verbose		report status on stdout
+    -g|--geometry <geometry>	set applet geometry
+    -t|--timeout <seconds>	set poll timeout
+    -u|--unit C|F		set temperature display unit
+
+"
+}
+
+proc parse_options {} {
+    global config
+    global argv
+    global PROG_VERSION
+
+    for {set i 0} {$i < [llength $argv]} {incr i} {
+	set arg [lindex $argv $i]
+	switch -- $arg {
+	    -\? - -h - -help - --help {
+		usage
+		exit
+	    }
+	    -d - --daemon {
+		set config(daemon) 1
+	    }
+	    -n - --noauto {
+		set config(auto) 0
+	    }
+	    -v - --verbose {
+		set config(verbose) 1
+	    }
+	    -g - --geometry {
+		set config(geometry) [lindex $argv [incr i]]
+	    }
+	    -t - --timeout {
+		set config(timeout) [lindex $argv [incr i]]
+	    }
+	    -u - --unit {
+		set config(unit) [lindex $argv [incr i]]
+	    }
+	    -- {
+		continue
+	    }
+	    default {
+		puts stderr "invalid option: $arg"
+		exit 1
+	    }
+	}
+    }
+
+    if {$config(verbose) > 0} {
+	set copyright "Copyright (C) 2001 Massimo Dal Zotto <dz@debian.org>"
+	puts "i8kmon $PROG_VERSION - $copyright"
+	parray config
+    }
+}
+
+proc trap_signals {} {
+    # Doesn't work with tclsh, works with tcl interpreter from TclX.
+    catch {
+	signal -restart trap SIGHUP { read_config; status_timer }
+    }
+}
+
+proc main {} {
+    read_config
+    parse_options
+    make_ui
+    trap_signals
+    status_timer
+}
+
+if {$tcl_interactive == 0} {
+    main
+    vwait exit
+}
+
+# Local variables:
+# mode: tcl
+# End:
+
+# end of file
