@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# i8kutils	Dell Inspiron fan/cpu-temperature monitor
+# i8kmon	Dell Inspiron fan/cpu-temperature monitor
 #
 #		Written by Miquel van Smoorenburg <miquels@cistron.nl>.
 #		Modified for Debian GNU/Linux

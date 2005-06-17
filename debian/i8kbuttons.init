@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# i8kutils	Dell Inspiron volume buttons monitor
+# i8kbuttons	Dell Inspiron volume buttons monitor
 #
 #		Written by Miquel van Smoorenburg <miquels@cistron.nl>.
 #		Modified for Debian GNU/Linux
@@ -20,8 +20,25 @@ set -e
 test -x $DAEMON || exit 0
 test -e $CONFIGFILE && . $CONFIGFILE
 
+function i8k_setkeycodes() {
+    kvers="$(uname -r)"
+    test "${kvers#2.6.}" != "$kvers" || return
+    test "$I8KBUTTONS_SETKEYCODES" = true || return
+    keys=$(getkeycodes | grep "^e0 00" | awk '{print $4,$5}')
+    test "$keys" = "${I8K_KEY_PLAY:-171} ${I8K_KEY_STOP:-172}" && return
+
+    setkeycodes ${I8K_SCAN_PLAY:-e001} ${I8K_KEY_PLAY:-171}
+    setkeycodes ${I8K_SCAN_STOP:-e002} ${I8K_KEY_STOP:-172}
+    setkeycodes ${I8K_SCAN_PREV:-e003} ${I8K_KEY_PREV:-187}
+    setkeycodes ${I8K_SCAN_NEXT:-e004} ${I8K_KEY_NEXT:-189}
+    setkeycodes ${I8K_SCAN_MUTE:-e020} ${I8K_KEY_MUTE:-113}
+    setkeycodes ${I8K_SCAN_VOLD:-e02e} ${I8K_KEY_VOLD:-114}
+    setkeycodes ${I8K_SCAN_VOLU:-e030} ${I8K_KEY_VOLU:-114}
+}
+
 case "$1" in
     start)
+	i8k_setkeycodes &>/dev/null || true
 	test -e "$PROC_I8K" || exit 0
 	test -n "$I8KBUTTONS_UP_CMD" -o \
 	     -n "$I8KBUTTONS_DOWN_CMD" -o \

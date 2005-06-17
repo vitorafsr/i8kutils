@@ -2,15 +2,15 @@ Source: i8kutils
 Section: utils
 Priority: optional
 Maintainer: Massimo Dal Zotto <dz@debian.org>
-Build-Depends: debhelper (>> 3.0.0)
-Standards-Version: 3.5.2
+Build-Depends: debhelper (>= 4.0.0)
+Standards-Version: 3.6.1
 
 Package: i8kutils
-Architecture: i386
+Architecture: i386 kfreebsd-i386
 Depends: ${shlibs:Depends}, tk8.4 | wish
 Conflicts: i8kfan
 Replaces: i8kfan
-Description: Dell Inspiron and Latitude laptop utilities
+Description: utilities for Dell Inspiron and Latitude laptops
  This is a collection of utilities to control Dell Inspiron and Latitude
  laptops. It includes programs to turn the fan on and off, to read fan
  status, CPU temperature, BIOS version and to handle the volume buttons
@@ -24,3 +24,20 @@ Description: Dell Inspiron and Latitude laptop utilities
  the package sources or found in Linux kernel 2.4.14 and later versions.
  The kernel module has been tested only on Inspiron 8000 laptops but it
  should work on any Inspiron and Latitude laptops.
+
+Package: i8kutils-smm
+Architecture: i386 kfreebsd-i386
+Depends: ${shlibs:Depends}
+Description: smm test programs for Dell Inspiron and Latitude laptops
+ This package contains the smm test program for Dell laptops.
+ .
+ THIS PROGRAM IS VERY DANGEROUS. IT CAN CRASH YOUR COMPUTER, DESTROY DATA
+ ON THE HARDISK, CORRUPT THE BIOS, PHYSICALLY DAMAGE YOUR HARDWARE AND
+ MAKE YOUR COMPUTER TOTALLY UNUSABLE.
+ .
+ DON'T USE THIS PROGRAM UNLESS YOU REALLY KNOW WHAT YOU ARE DOING. I WILL
+ NOT BE RESPONSIBLE FOR ANY DIRECT OR INDIRECT DAMAGE CAUSED BY USING THIS
+ PROGRAM.
+ .
+ THIS PACKAGE IS FOR PRIVATE USE AND MUST NOT BE DISTRIBUTED WITH DEBIAN
+ OR ANY OTHER DISTRIBUTION.

@@ -1,3 +1,39 @@
+i8kutils (1.27) unstable; urgency=low
+
+  * In debian/control added kfreebsd-i386 to Architecture: field.
+    Closes: #314270.
+
+  * In i8kmon disabled the auto option by default. Users must
+    enable it manually in the config file.
+
+  * In i8kmon added MAKE_LINTIAN_HAPPY hack.
+
+  * Added the private i8kutils-smm package. This package is used by me
+    only for testing purposes and must not be distributed with debian
+    or any other distribution.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Fri, 17 Jun 2005 11:26:26 +0200
+
+i8kutils (1.26) unstable; urgency=low
+
+  * Fixed bug in i8k.c. Thanks to Stephen Gildea. 
+
+  * Fixed i8k.def sample file.
+    Closes: #232306.
+
+  * In i8kmon remove corresponding fan button if one fan not present.
+    and undo kernel computation (30*speed) if fan speed seems too high
+    (until the kernel driver is rewritten).
+
+  * In i8kmon set WM_COMMAND property to work with gnome-swallow applet.
+    Closes: #265914.
+
+  * In /etc/init.d/i8kbuttons set kernel keycodes if running on kernel 2.6
+    and I8KBUTTONS_SETKEYCODES enabled in /etc/i8kbuttons configfile.
+    Closes: #231824.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Thu,  3 Feb 2005 19:47:33 +0100  
+
 i8kutils (1.25) unstable; urgency=low
 
   * Fixed fprintf format string in i8kbuttons.
@@ -96,7 +132,7 @@ i8kutils (1.16) unstable; urgency=low
   * In i8kmon detect automatically laptops with only one fan and reconfigure
     the user interface with left button only.
 
-  * Added i8kutils init script as suggested by Karl E. Jørgensen.
+  * Added i8kutils init script as suggested by Karl E. JÃ¸rgensen.
     The daemon is started only if daemon option is set in /etc/i8kmon,
     which is not the default since the monitor is normally run by users.
     Closes: Bug#155629.

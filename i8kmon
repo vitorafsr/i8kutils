@@ -4,7 +4,7 @@
 #	    The program can be run in background as daemon or under X as an
 #	    applet swallowed in the gnome panel.
 #
-# Copyright (C) 2001  Massimo Dal Zotto <dz@debian.org>
+# Copyright (C) 2001-2005  Massimo Dal Zotto <dz@debian.org>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -17,13 +17,12 @@
 # General Public License for more details.
 #
 #\
-if command -v tcl >/dev/null 2>&1; then \
-    exec tcl $0 -- "$@"; \
-else \
-    exec tclsh $0 -- "$@"; \
-fi
+exec tclsh $0 -- "$@"
 
-set PROG_VERSION "v1.24 29/12/2003"
+#\
+MAKE_LINTIAN_HAPPY '
+
+set PROG_VERSION "v1.27 17/06/2005"
 
 array set config {
     sysconfig	/etc/i8kmon
@@ -34,7 +33,7 @@ array set config {
     proc_ac26	/proc/acpi/ac_adapter/AC/state
     i8kfan	/usr/bin/i8kfan
     geometry	{}
-    auto	1
+    auto	0
     daemon	0
     verbose	0
     timeout	5
@@ -160,9 +159,16 @@ proc read_i8k_status {} {
     }
 
     set info [seek $status(proc_i8k) 0; read -nonewline $status(proc_i8k)]
-    # Uncomment to force high temp or one fan for debugging
+    # Uncomment to force high temp or one fan for debugging:
     # set info [lreplace $info 3 3 80]
     # set info [lreplace $info 5 5 -22]; set info [lreplace $info 7 7 -22]
+    # Undo kernel computation 30*speed if speed seems too high.
+    if {[lindex $info 6] > 20000} {
+	set info [lreplace $info 6 6 [expr [lindex $info 6]/30]]
+    }
+    if {[lindex $info 7] > 20000} {
+	set info [lreplace $info 7 7 [expr [lindex $info 7]/30]]
+    }
 
     set status(temp)   [lindex $info 3]
     set status(lstate) [lindex $info 4]
@@ -170,21 +176,22 @@ proc read_i8k_status {} {
     set status(lspeed) [lindex $info 6]
     set status(rspeed) [lindex $info 7]
 
-    # If AC status is not available read it from /proc/apm
+    # If AC status is not available read it from procfs
     if {[set ac [lindex $info 8]] >= 0} {
 	set status(ac) $ac
     } else {
 	read_ac_status
     }
 
+    # Done in make_ui.
     # If second fan status is not available assume we have only a fan
-    if {$status(nfans) >= 2 && $status(lstate) >= 0 && $status(rstate) < 0} {
-	set status(nfans) 1
-	catch {
-	    place forget .applet.rfan
-	    place .applet.lfan -relx 0.0 -rely 0.5 -relwidth 1.0 -relheight 0.5
-	}
-    }
+    #if {$status(nfans) >= 2 && $status(lstate) >= 0 && $status(rstate) < 0} {
+    #	set status(nfans) 1
+    #	catch {
+    #	    place forget .i8kmon.rfan
+    #	    place .i8kmon.lfan -relx 0.0 -rely 0.5 -relwidth 1.0 -relheight 0.5
+    #	}
+    #}
 
     # If fan speed is not available (on I4000) assume fans are running
     if {$status(lspeed) < 0} { set status(lspeed) $config(min_speed) }
@@ -483,6 +490,8 @@ proc i8kfan {args} {
     global config
     global status
 
+    if {$args == {- -}} return
+
     set cmd [linsert $args 0 exec $config(i8kfan)]
     if {$config(verbose) > 0} {
 	puts "# $cmd"
@@ -491,6 +500,9 @@ proc i8kfan {args} {
     set result [eval $cmd]
     set status(lstate) [lindex $result 0]
     set status(rstate) [lindex $result 1]
+
+    if {$status(lstate) < 0} { set status(lstate) 0 }
+    if {$status(rstate) < 0} { set status(rstate) 0 }
 }
 
 proc make_ui {} {
@@ -502,19 +514,21 @@ proc make_ui {} {
 	# Daemon mode, no user interface
 	return
     }
-    if {[info command .applet] != {}} {
+    if {[info command .i8kmon] != {}} {
 	# Applet aready existing
 	return
     }
 
     # Load Tk library (require a Tk version compatible with Tcl)
     package require Tk $tcl_version
+    wm title . {}
     wm withdraw .
+    update
 
-    toplevel .applet -class i8kmon
-    wm protocol .applet WM_DELETE_WINDOW { exit }
-    wm command .applet i8kmon
-    wm title .applet i8kmon
+    toplevel .i8kmon -class I8kmon -relief sunken -bd 1
+    wm title .i8kmon i8kmon
+    wm command .i8kmon i8kmon
+    wm protocol .i8kmon WM_DELETE_WINDOW { exit }
 
     if {$config(geometry) != {}} {
 	set geometry $config(geometry)
@@ -526,28 +540,41 @@ proc make_ui {} {
     } else {
 	set font 6x10
     }
-    wm geometry .applet $geometry
+    wm geometry .i8kmon $geometry
 
-    label .applet.temp -bd 0 -padx 0 -pady 0 -text "0" -font $font \
+    label .i8kmon.temp -bd 0 -padx 0 -pady 0 -text "0" -font $font \
 	    -highlightthickness 0 -width 3
-    button .applet.lfan -bd 1 -padx 0 -pady 0 -text {} -font $font \
+    button .i8kmon.lfan -bd 1 -padx 0 -pady 0 -text {} -font $font \
 	    -highlightthickness 0 -command {toggle_fan left}
-    button .applet.rfan -bd 1 -padx 0 -pady 0 -text {} -font $font \
+    button .i8kmon.rfan -bd 1 -padx 0 -pady 0 -text {} -font $font \
 	    -highlightthickness 0 -command {toggle_fan right}
-    bind .applet.lfan <Button-2> {toggle_fan left 2}
-    bind .applet.lfan <Button-3> {toggle_fan left 0}
-    bind .applet.rfan <Button-2> {toggle_fan right 2}
-    bind .applet.rfan <Button-3> {toggle_fan right 0}
+    bind .i8kmon.lfan <Button-2> {toggle_fan left 2}
+    bind .i8kmon.lfan <Button-3> {toggle_fan left 0}
+    bind .i8kmon.rfan <Button-2> {toggle_fan right 2}
+    bind .i8kmon.rfan <Button-3> {toggle_fan right 0}
 
-    place .applet.temp -relx 0.0 -rely 0.0 -relwidth 1.0 -relheight 0.5
-    place .applet.lfan -relx 0.0 -rely 0.5 -relwidth 0.5 -relheight 0.5
-    place .applet.rfan -relx 0.5 -rely 0.5 -relwidth 0.5 -relheight 0.5
+    place .i8kmon.temp -relx 0.0 -rely 0.0 -relwidth 1.0 -relheight 0.5
+    place .i8kmon.lfan -relx 0.0 -rely 0.5 -relwidth 0.5 -relheight 0.5
+    place .i8kmon.rfan -relx 0.5 -rely 0.5 -relwidth 0.5 -relheight 0.5
 
-    set status(bg)       [.applet.lfan cget -bg]
-    set status(activebg) [.applet.lfan cget -activebackground]
+    # Read /proc/i8k and set $status(lstate) and $status(rstate)
+    read_i8k_status
+    if {$status(lstate) < 0} {
+	place forget .i8kmon.lfan
+	place .i8kmon.rfan -relx 0 -rely 0.5 -relwidth 1 -relheight 0.5
+    }
+    if {$status(rstate) < 0} {
+	place forget .i8kmon.rfan
+	place .i8kmon.lfan -relx 0 -rely 0.5 -relwidth 1 -relheight 0.5
+    }
+
+    set status(bg)       [.i8kmon.lfan cget -bg]
+    set status(activebg) [.i8kmon.lfan cget -activebackground]
     set status(ui)	 1
 
-    make_menu .applet
+    make_menu .i8kmon
+
+    update
 }
 
 proc make_menu {w} {
@@ -563,7 +590,7 @@ proc make_menu {w} {
     $menu add command -label "Reload" -command { read_config; status_timer }
     $menu add command -label "Exit"   -command { exit }
 
-    bind .applet.temp <Button-1> "tk_popup $menu %X %Y"
+    bind .i8kmon.temp <Button-1> "tk_popup $menu %X %Y"
 }
 
 proc update_ui {} {
@@ -571,7 +598,7 @@ proc update_ui {} {
     global status
 
     # If applet window is unexpectedly destroyed exit the program
-    if {![winfo exists .applet]} {
+    if {![winfo exists .i8kmon]} {
 	puts stderr "applet window destroyed, exit"
 	exit 1
     }
@@ -586,9 +613,9 @@ proc update_ui {} {
 	set fg black
     }
     if {$config(unit) == "F" } {
-	.applet.temp config -text [expr (0+$status(temp))*9/5+32] -fg $fg
+	.i8kmon.temp config -text [expr (0+$status(temp))*9/5+32] -fg $fg
     } else {
-	.applet.temp config -text $status(temp) -fg $fg
+	.i8kmon.temp config -text $status(temp) -fg $fg
     }
 
     # Left button
@@ -598,11 +625,11 @@ proc update_ui {} {
 	set status(lstuck) 0
     }
     if {$status(lstate) == 0} {
-	.applet.lfan config -text {} -bg $bg -activebackground $ab
+	.i8kmon.lfan config -text {} -bg $bg -activebackground $ab
     } elseif {$status(lstuck) >= 2} {
-	.applet.lfan config -text $status(lstate) -bg red -activebackground red
+	.i8kmon.lfan config -text $status(lstate) -bg red -activebackground red
     } else {
-	.applet.lfan config -text $status(lstate) -bg $bg -activebackground $ab
+	.i8kmon.lfan config -text $status(lstate) -bg $bg -activebackground $ab
     }
 
     # Right button
@@ -613,11 +640,11 @@ proc update_ui {} {
 	set status(rstuck) 0
     }
     if {$status(rstate) == 0} {
-	.applet.rfan config -text {} -bg $bg -activebackground $ab
+	.i8kmon.rfan config -text {} -bg $bg -activebackground $ab
     } elseif {$status(rstuck) >= 2} {
-	.applet.rfan config -text $status(rstate) -bg red -activebackground red
+	.i8kmon.rfan config -text $status(rstate) -bg red -activebackground red
     } else {
-	.applet.rfan config -text $status(rstate) -bg $bg -activebackground $ab
+	.i8kmon.rfan config -text $status(rstate) -bg $bg -activebackground $ab
     }
 }
 
@@ -653,8 +680,10 @@ proc usage {} {
 
 Options:
 
+    -a|--auto			control automatically the fans
+    -na|--noauto		don\x27t control automatically the fans
     -d|--daemon			run in daemon mode without user interface
-    -n|--noauto			don't control automatically the fans
+    -nd|--nodaemon		don\x27 run as daemon, open the user interface
     -v|--verbose		report status on stdout
     -g|--geometry <geometry>	set applet geometry
     -t|--timeout <seconds>	set poll timeout
@@ -717,8 +746,9 @@ proc parse_options {} {
 }
 
 proc trap_signals {} {
-    # Doesn't work with tclsh, works with tcl interpreter from TclX.
+    # This works only with the TclX extension library.
     catch {
+	package require Tclx
 	signal -restart trap SIGHUP { read_config; status_timer }
     }
 }
@@ -735,6 +765,9 @@ if {$tcl_interactive == 0} {
     main
     vwait forever
 }
+
+#\
+MAKE_LINTIAN_HAPPY '
 
 # Local variables:
 # mode: tcl

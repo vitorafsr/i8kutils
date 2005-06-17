@@ -5,16 +5,23 @@
   to /usr/share/hotkeys/i8k.def and set Kbd=i8k in /etc/hotkeys.conf.
 -->
 
-<CONFIG model="Dell Inspiron Notebook">
+<definition>
 
-  <Play      keycode="129"/>
-  <Stop      keycode="130"/>
-  <PrevTrack keycode="131"/>
-  <NextTrack keycode="132"/>
+  <config model="Dell Inspiron Notebook">
+    <Play      keycode="129"/>
+    <Stop      keycode="130"/>
+    <PrevTrack keycode="131"/>
+    <NextTrack keycode="132"/>
 
-  <!-- available only if i8k is loaded with handle_buttons=1 -->
-  <Mute      keycode="160"/>
-  <VolDown   keycode="174" adj="5"/>
-  <VolUp     keycode="176" adj="5"/>
+    <!-- Only with kernel 2.4 if i8k is loaded with handle_buttons=1 -->
+    <Mute      keycode="160"/>
+    <VolDown   keycode="174" adj="5"/>
+    <VolUp     keycode="176" adj="5"/>
+  </config>
 
-</CONFIG>
+  <contributor>
+    <name>Massimo Dal Zotto</name>
+    <email>dz@debian.org</email>
+  </contributor>
+
+</definition>

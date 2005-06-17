@@ -1,4 +1,4 @@
-.TH i8kmon 1 "22 August 2002" "Massimo Dal Zotto" Utilities
+.TH i8kmon 1 "17 June 2005" "Massimo Dal Zotto" Utilities
 .SH "NAME"
 .LP 
 I8kmon \- Monitor the cpu temperature and fan status on Dell
@@ -13,12 +13,14 @@ and fan status on Dell Inspiron laptops.
 The program can be run in background as daemon or under X as
 an applet which can be swallowed in the gnome panel.
 .LP 
-By default the program monitors the cpu temperature and
-automatically controls the fan status accordingly to
-user\-defined temperature thresholds. This automatic behavior
-can be disabled with the \fB\-\-noauto\fR option.
+By default the program monitors the cpu temperature but doesn't
+do any automatic controls of the fan status accordingly to
+user\-defined temperature thresholds because this may not be
+needed if your laptop does already a good job with fans control.
+The automatic control can be enabled manually with the
+\fB\-\-auto\fR option.
 .LP
-The automatic fan control can also be turned off in the
+The automatic fan control can also be turned on in the
 control popup menu which is invoked by clicking with
 the left mouse button on the temperature label.
 The control menu has three items: Auto, which controls the 
@@ -50,6 +52,14 @@ try to override the manual settings.
 The program accepts the following command\-line options:
 .LP 
 .TP 
+\fB\-a\fR, \fB\-\-auto\fR
+Monitor cpu temperature and fan status and control
+automatically the fans.
+.TP 
+\fB\-na\fR, \fB\-\-noauto\fR
+Monitor cpu temperature and fan status but don't control
+automatically the fans. This is the default setting.
+.TP 
 \fB\-d\fR, \fB\-\-daemon\fR
 Run the program in daemon mode, i.e. without the user
 interface.
@@ -57,14 +67,6 @@ interface.
 \fB\-nd\fR, \fB\-\-nodaemon\fR
 Don't run the program in daemon mode, i.e. open the user
 interface. This is the default setting.
-.TP 
-\fB\-a\fR, \fB\-\-auto\fR
-Monitor cpu temperature and fan status and control
-automatically the fans. This is the default setting.
-.TP 
-\fB\-na\fR, \fB\-\-noauto\fR
-Monitor cpu temperature and fan status but don't control
-automatically the fans.
 .TP 
 \fB\-v\fR, \fB\-\-verbose\fR
 Report hardware status and program actions on stdout.
@@ -149,9 +151,9 @@ can't find package Tk
 .br
 "package require Tk"
 .LP
-This is not a bug in i8kmon. It means that Tcl/Tk files are not installed
+This is not a bug of i8kmon. It means that Tcl/Tk files are not installed
 correctly on your system and the Tk library can't be dynamically loaded
-from Tcl. In this case you can run i8kmon with the command:
+from Tcl as it should be. In this case you can run i8kmon with the command:
 .IP
 wish /usr/bin/i8kmon -- [options...]
 .LP

@@ -1,12 +1,24 @@
 #!/usr/bin/make -f
+# -*- makefile -*-
 # Sample debian/rules that uses debhelper.
-# GNU copyright 1997 to 1999 by Joey Hess.
+# This file was originally written by Joey Hess and Craig Small.
+# As a special exception, when this file is copied by dh-make into a
+# dh-make output file, you may use that output file without restriction.
+# This special exception was added by Craig Small in version 0.37 of dh-make.
 
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-# This is the debhelper compatability version to use.
-export DH_COMPAT=3
+
+
+
+CFLAGS = -Wall -g
+
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+	CFLAGS += -O0
+else
+	CFLAGS += -O2
+endif
 
 configure: configure-stamp
 configure-stamp:
@@ -15,8 +27,10 @@ configure-stamp:
 
 	touch configure-stamp
 
-build: configure-stamp build-stamp
-build-stamp:
+
+build: build-stamp
+
+build-stamp: configure-stamp 
 	dh_testdir
 
 	# Add here commands to compile the package.
@@ -32,17 +46,25 @@ clean:
 	# Add here commands to clean up after the build process.
 	-$(MAKE) distclean
 
-	dh_clean
+	dh_clean 
 
 install: build
 	dh_testdir
 	dh_testroot
-	dh_clean -k
+	dh_clean -k 
 	dh_installdirs
 
 	# Add here commands to install the package into debian/i8kutils.
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/i8kutils
 
+install-smm: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k 
+	dh_installdirs
+
+	# Add here commands to install the package into debian/i8kutils-smm.
+	$(MAKE) install-smm DESTDIR=$(CURDIR)/debian/i8kutils-smm
 
 # Build architecture-independent files here.
 binary-indep: build install
@@ -52,10 +74,12 @@ binary-indep: build install
 binary-arch: build install
 	dh_testdir
 	dh_testroot
-	# dh_installdebconf	
-	dh_installdocs
-	dh_installexamples
+	dh_installchangelogs -pi8kutils
+	dh_installdocs -pi8kutils
+	dh_installexamples -pi8kutils
+	# dh_install
 	# dh_installmenu
+	# dh_installdebconf	
 	# dh_installlogrotate
 	# dh_installemacsen
 	# dh_installpam
@@ -63,22 +87,53 @@ binary-arch: build install
 	dh_installinit --init-script=i8kmon
 	dh_installinit --init-script=i8kbuttons
 	# dh_installcron
+	# dh_installinfo
 	dh_installman *.1
 	ln -s i8kctl.1 $(CURDIR)/debian/i8kutils/usr/share/man/man1/i8kfan.1
-	# dh_installinfo
-	# dh_undocumented
-	dh_installchangelogs 
-	dh_link
-	dh_strip
-	dh_compress
-	dh_fixperms
-	# dh_makeshlibs
-	dh_installdeb
+	dh_link -pi8kutils
+	dh_strip -pi8kutils
+	dh_compress -pi8kutils
+	dh_fixperms -pi8kutils
 	# dh_perl
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
+	# dh_python
+	# dh_makeshlibs
+	dh_installdeb -pi8kutils
+	dh_shlibdeps -pi8kutils
+	dh_gencontrol -pi8kutils
+	dh_md5sums -pi8kutils
+	dh_builddeb -pi8kutils
+
+# Build the i8kutils-smm package. This package is for private use and must
+# not be distributed with debian or any other distribution. 
+smm-deb: build install-smm
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs -pi8kutils-smm
+	dh_installdocs -pi8kutils-smm
+	# dh_installexamples
+	# dh_install
+	# dh_installmenu
+	# dh_installdebconf	
+	# dh_installlogrotate
+	# dh_installemacsen
+	# dh_installpam
+	# dh_installmime
+	# dh_installinit
+	# dh_installcron
+	# dh_installinfo
+	# dh_installman
+	dh_link -pi8kutils-smm
+	dh_strip -pi8kutils-smm
+	dh_compress -pi8kutils-smm
+	dh_fixperms -pi8kutils-smm
+	# dh_perl
+	# dh_python
+	# dh_makeshlibs
+	dh_installdeb -pi8kutils-smm
+	dh_shlibdeps -pi8kutils-smm
+	dh_gencontrol -pi8kutils-smm
+	dh_md5sums -pi8kutils-smm
+	dh_builddeb -pi8kutils-smm
 
 binary: binary-indep binary-arch
 .PHONY: build clean binary-indep binary-arch binary install configure

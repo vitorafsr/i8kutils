@@ -3,7 +3,7 @@
  *	    See http://www.debian.org/~dz/i8k/ for more information
  *	    and for latest version of this driver.
  *
- * Copyright (C) 2001-2003  Massimo Dal Zotto <dz@debian.org>
+ * Copyright (C) 2001-2005  Massimo Dal Zotto <dz@debian.org>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -32,7 +32,7 @@
 #include <linux/timer.h>
 #endif
 
-#define I8K_VERSION		"1.24 29/12/2003"
+#define I8K_VERSION		"1.26 04/02/2005"
 
 #define I8K_SMM_FN_STATUS	0x0025
 #define I8K_SMM_POWER_STATUS	0x0069
@@ -44,7 +44,6 @@
 #define I8K_SMM_GET_DELL_SIG2	0xffa3
 #define I8K_SMM_BIOS_VERSION	0x00a6
 
-#define I8K_FAN_MULT		30
 #define I8K_MAX_TEMP		127
 
 #define I8K_FN_NONE		0x00
@@ -59,7 +58,8 @@
 
 #define I8K_TEMPERATURE_BUG	1
 
-#define DELL_SIGNATURE		"Dell Computer"
+#define DELL_VENDOR1		"Dell Computer"
+#define DELL_VENDOR2		"Dell Inc."
 
 static char *supported_models[] = {
     "Inspiron",
@@ -75,16 +75,19 @@ static char serial_number[16] = "?";
 static int force = 0;
 static int restricted = 0;
 static int power_status = 0;
+static int fan_multiplier = 1;
 
-MODULE_AUTHOR("Massimo Dal Zotto (dz@debian.org)");
+MODULE_AUTHOR("Massimo Dal Zotto <dz@debian.org>");
 MODULE_DESCRIPTION("Driver for accessing SMM BIOS on Dell laptops");
 MODULE_LICENSE("GPL");
 MODULE_PARM(force, "i");
 MODULE_PARM(restricted, "i");
 MODULE_PARM(power_status, "i");
+MODULE_PARM(fan_multiplier, "i");
 MODULE_PARM_DESC(force, "Force loading without checking for supported models");
 MODULE_PARM_DESC(restricted, "Allow fan control if SYS_ADMIN capability set");
 MODULE_PARM_DESC(power_status, "Report power status in /proc/i8k");
+MODULE_PARM_DESC(fan_multiplier, "Set fan speed multiplier");
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0))
 /* Interval between polling of keys, in jiffies. */
@@ -93,8 +96,8 @@ MODULE_PARM_DESC(power_status, "Report power status in /proc/i8k");
 #define I8K_REPEAT_RATE		10
 
 /*
- * (To be escaped) Scancodes for the keys.  These were chosen to match other
- * "Internet" keyboards.
+ * (To be escaped) Scancodes for the keys.  These were chosen to match
+ * other "Internet" keyboards.
  */
 #define I8K_KEYS_UP_SCANCODE	0x30
 #define I8K_KEYS_DOWN_SCANCODE	0x2e
@@ -284,7 +287,7 @@ static int i8k_get_fan_speed(int fan)
 	return rc;
     }
 
-    return (regs.eax & 0xffff) * I8K_FAN_MULT;
+    return (regs.eax & 0xffff) * fan_multiplier;
 }
 
 /*
@@ -354,6 +357,7 @@ static int i8k_get_dell_sig_aux(int fn)
 	return rc;
     }
 
+    /* Should be regs.eax="DIAG" and regs.edx="DELL" */
     if ((regs.eax == 1145651527) && (regs.edx == 1145392204)) {
 	return 0;
     } else {
@@ -764,7 +768,8 @@ static int __init i8k_dmi_probe(void)
 	return -ENODEV;
     }
 
-    if (strncmp(system_vendor,DELL_SIGNATURE,strlen(DELL_SIGNATURE)) != 0) {
+    if ((strncmp(system_vendor,DELL_VENDOR1,strlen(DELL_VENDOR1)) != 0) &&
+	(strncmp(system_vendor,DELL_VENDOR2,strlen(DELL_VENDOR2)) != 0)) {
 	printk(KERN_INFO "i8k: not running on a Dell system\n");
 	return -ENODEV;
     }
@@ -794,9 +799,10 @@ static int __init i8k_probe(void)
     /*
      * Get DMI information
      */
-    if (i8k_dmi_probe() != 0) {
-	printk(KERN_INFO "i8k: vendor=%s, model=%s, version=%s\n",
-	       system_vendor, product_name, bios_version);
+    if (i8k_dmi_probe() == 0) {
+	printk(KERN_INFO \
+	       "i8k: vendor=%s, model=%s, bios_version=%s, s/n=%s\n",
+	       system_vendor, product_name, bios_version, serial_number);
     }
 
     /*
@@ -860,7 +866,9 @@ int __init i8k_init(void)
 	return -ENOENT;
     }
     proc_i8k->proc_fops = &i8k_fops;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
     SET_MODULE_OWNER(proc_i8k);
+#endif
 
     printk(KERN_INFO
 	   "Dell laptop SMM driver v%s Massimo Dal Zotto (dz@debian.org)\n",
@@ -880,8 +888,10 @@ int __init i8k_init(void)
 }
 
 #ifdef MODULE
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
 #ifndef MODVERSIONS
-#warning "compiling unversioned module, load with insmod --force"
+#warning "i8k.c: compiling unversioned module, load with insmod --force"
+#endif
 #endif
 
 int init_module(void)
