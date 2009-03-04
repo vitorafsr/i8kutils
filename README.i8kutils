@@ -42,8 +42,8 @@ driver, can be downloaded from:
 
     http://www.debian.org/~dz/i8k/
 
-The driver works only with kernels 2.4 and 2.5. There will not be a porting
-on older kernels.
+The driver works only with kernels 2.4 onwards (i.e. 2.4, 2.5 and 2.6 are
+confirmed to work). There will not be a porting to older kernels.
 
 
 LICENCE

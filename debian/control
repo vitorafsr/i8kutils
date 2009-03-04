@@ -6,7 +6,7 @@ Build-Depends: debhelper (>= 4.0.0)
 Standards-Version: 3.6.1
 
 Package: i8kutils
-Architecture: i386 kfreebsd-i386
+Architecture: i386 kfreebsd-i386 amd64 kfreebsd-amd64
 Depends: ${shlibs:Depends}, tk8.4 | wish
 Conflicts: i8kfan
 Replaces: i8kfan
@@ -26,7 +26,7 @@ Description: utilities for Dell Inspiron and Latitude laptops
  should work on any Inspiron and Latitude laptops.
 
 Package: i8kutils-smm
-Architecture: i386 kfreebsd-i386
+Architecture: i386 kfreebsd-i386 amd64 kfreebsd-amd64
 Depends: ${shlibs:Depends}
 Description: smm test programs for Dell Inspiron and Latitude laptops
  This package contains the smm test program for Dell laptops.
