@@ -1,5 +1,14 @@
 #!/bin/sh
 #
+### BEGIN INIT INFO
+# Provides:          i8kbuttons
+# Should-Start:      $local_fs
+# Should-Stop:       $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Dell Inspiron volume buttons monitor
+### END INIT INFO
+#
 # i8kbuttons	Dell Inspiron volume buttons monitor
 #
 #		Written by Miquel van Smoorenburg <miquels@cistron.nl>.
@@ -20,7 +29,7 @@ set -e
 test -x $DAEMON || exit 0
 test -e $CONFIGFILE && . $CONFIGFILE
 
-function i8k_setkeycodes() {
+i8k_setkeycodes() {
     kvers="$(uname -r)"
     test "${kvers#2.6.}" != "$kvers" || return
     test "$I8KBUTTONS_SETKEYCODES" = true || return
