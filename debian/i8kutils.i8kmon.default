@@ -1,0 +1,4 @@
+# /etc/default/i8kmon
+
+# Change to one enable i8kmon
+ENABLED=0

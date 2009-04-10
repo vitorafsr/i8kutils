@@ -1,4 +1,4 @@
-.TH i8kbuttons 1 "20 August 2002" "Massimo Dal Zotto" Utilities
+.TH i8kbuttons 1 "6 April 2009" "Massimo Dal Zotto" Utilities
 .SH "NAME"
 .LP 
 I8kbuttons \- Monitor the status of Fn\-buttons on Dell Inspiron laptops.
@@ -51,17 +51,17 @@ an initial delay of 250 milliseconds.
 .LP 
 This program can be used by normal users or started as daemon by an init
 script. Under Debian GNU/Linux it is possible to start automatically the
-daemon at boot by creating an /etc/i8kbuttons configfile and setting the
-I8KBUTTONS_UP_CMD, I8KBUTTONS_DOWN_CMD and I8KBUTTONS_MUTE_CMD variables
+daemon at boot by creating an /etc/default/i8kbuttons configfile and setting
+the I8KBUTTONS_UP_CMD, I8KBUTTONS_DOWN_CMD and I8KBUTTONS_MUTE_CMD variables
 with the command which must be executed by the program. Note the the
-/etc/i8kbuttons configfile is not installed by the i8kutils package because
-the program is usually run by normal users. If you want to use it as daemon
-you must create the config file yourself.
+/etc/default/i8kbuttons configfile is not installed by the i8kutils package
+because the program is usually run by normal users. If you want to use it as
+daemon you must create the config file yourself.
 .SH "FILES"
 .LP 
 \fI/proc/i8k\fP
 .br 
-\fI/etc/i8kbuttons\fP
+\fI/etc/default/i8kbuttons\fP
 .SH "AUTHORS"
 .LP 
 Massimo Dal Zotto <dz@debian.org>

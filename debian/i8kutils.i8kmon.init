@@ -1,75 +1,72 @@
 #!/bin/sh
-#
+
 ### BEGIN INIT INFO
 # Provides:          i8kmon
+# Required-Start:
+# Required-Stop:
 # Should-Start:      $local_fs
 # Should-Stop:       $local_fs
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Dell Inspiron fan/cpu-temperature monitor
 ### END INIT INFO
-#
+
 # i8kmon	Dell Inspiron fan/cpu-temperature monitor
 #
 #		Written by Miquel van Smoorenburg <miquels@cistron.nl>.
 #		Modified for Debian GNU/Linux
 #		by Ian Murdock <imurdock@gnu.ai.mit.edu>.
 #
-#		Modified for i8kutils by Karl E. Jørgensen <karl@jorgensen.com>
-#		and Massimo Dal Zotto <dz@debian.org>
+#		Modified for i8kutils by Karl E. Jørgensen <karl@jorgensen.com>,
+#		Massimo Dal Zotto <dz@debian.org> and
+#       Bradley Smith <bradsmith@debian.org>
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
-DAEMON=/usr/bin/i8kmon
-CONFIGFILE=/etc/i8kmon
-PROC_I8K=/proc/i8k
+
+. /lib/lsb/init-functions
+
 NAME=i8kmon
+DAEMON=/usr/bin/i8kmon
+PROC_I8K=/proc/i8k
 DESC="Dell Inspiron fan/cpu-temperature monitor"
-I8KMON_ARGS="--daemon"
+I8KMON_ARGS="--daemon --nouserconfig"
+PIDFILE=/var/run/$NAME.pid
+ENABLED=0
 
-set -e
+test -x $DAEMON || exit 5
 
-test -x $DAEMON || exit 0
-
-CONFIG_DAEMON=$(
-    # Config file /etc/i8kmon is optional
-    cat "$CONFIGFILE" 2>/dev/null \
-      | sed 's/#.*//g;/config(daemon)/!d;s/.*(.*)[ 	]*//g'
-)
+if [ -f /etc/default/$NAME ] ; then
+    . /etc/default/$NAME
+fi
 
 case "$1" in
     start)
-	test -e "$PROC_I8K" || exit 0
-	test "$CONFIG_DAEMON" = 1 || exit 0
-	echo -n "Starting $DESC: $NAME"
-	start-stop-daemon --start --quiet --pidfile /var/run/$NAME.pid \
-	    --exec $DAEMON --background --make-pidfile -- $I8KMON_ARGS
-	echo "."
-	;;
+        if [ "$ENABLED" = 0 ]; then
+            log_warning_msg "Not starting. Disabled via /etc/default/$NAME."
+            exit 0
+        fi
+	    log_daemon_msg "Starting $DESC" "$NAME"
+        modprobe i8k >/dev/null 2>&1 || true
+	    if [ ! -f "$PROC_I8K" ]; then
+            log_progress_msg "Could not find $PROC_I8K."
+            log_end_msg 1
+            exit 1
+        fi
+	    start-stop-daemon --start --quiet --pidfile $PIDFILE \
+    	    --background --make-pidfile --exec $DAEMON -- $I8KMON_ARGS
+        log_end_msg $?
+    	;;
     stop)
-	echo -n "Stopping $DESC: $NAME "
-	start-stop-daemon --oknodo --stop --quiet --pidfile /var/run/$NAME.pid
-	echo "."
-	rm -f /var/run/$NAME.pid
-	;;
+    	log_daemon_msg "Stopping $DESC" "$NAME"
+    	start-stop-daemon --oknodo --stop --quiet --pidfile $PIDFILE
+        log_end_msg $?
+    	rm -f $PIDFILE
+	    ;;
     restart|reload|force-reload)
-	# Sending SIGHUP doesn't work since tclsh doesn't handle signals
-	test -e "$PROC_I8K" || exit 0
-	test "$CONFIG_DAEMON" = 1 || exit 0
-	echo -n "Restarting $DESC: $NAME"
-	start-stop-daemon --oknodo --stop --quiet \
-	    --pidfile /var/run/$NAME.pid
-	rm -f /var/run/$NAME.pid
-	sleep 1
-	start-stop-daemon --start --quiet \
-	    --pidfile /var/run/$NAME.pid --exec $DAEMON \
-	    --background --make-pidfile -- $I8KMON_ARGS
-	echo "."
-	;;
+        $0 stop && sleep 2 && $0 start
+	    ;;
     *)
-	N=/etc/init.d/$NAME
-	echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
-	exit 1
-	;;
+    	echo "Usage: $0 {start|stop|restart|reload|force-reload}" >&2
+	    exit 2
+    	;;
 esac
-
-exit 0

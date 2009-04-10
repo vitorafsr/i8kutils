@@ -68,6 +68,9 @@ interface.
 Don't run the program in daemon mode, i.e. open the user
 interface. This is the default setting.
 .TP 
+\fB\-nc\fR, \fB\-\-nouserconfig\fR
+Don't attempt to source the ~/.i8kmon configfile, only /etc/i8kmon.
+.TP 
 \fB\-v\fR, \fB\-\-verbose\fR
 Report hardware status and program actions on stdout.
 .TP 
@@ -87,7 +90,8 @@ temperature values are always in Celsius.
 .SH "CONFIGURATION"
 .LP
 The program has builtin defaults and temperature thresholds but users can
-specify their own settings in configuration files /etc/i8kmon and ~/.i8kmon.
+specify their own settings in configuration files /etc/default/i8kmon and
+~/.i8kmon.
 The daemon defines 4 states with different fan speeds ({0 0}, {1 0}, {1 1},
 {2 2}) and for each state are defined the temperature thresholds which cause
 the switching to a higher or lower state. Furthermore each state can have
@@ -118,18 +122,20 @@ speed of the missing fan, for example:
 .IP
 set config(2) {{1 -}  60  80  65  85}
 .LP 
-This program can be used by normal users as Gnome panel applet or started
-as daemon by an init script. Under Debian GNU/Linux it is possible to start
-the daemon automatically by creating an /etc/i8kmon configfile containing
-the line "set config(daemon) 1". Note the the /etc/i8kmon configfile is not
-installed by the i8kutils package because the program is designed to be run
-by normal users. If you want to use it as daemon you must create the config
-file yourself.
+This program can be used by normal users as Gnome panel applet or started as
+daemon by an init script. Under Debian GNU/Linux it is possible to start the
+daemon automatically by creating an /etc/default/i8kmon configfile containing
+the line "set config(daemon) 1". Note the the /etc/default/i8kmon configfile
+is not installed by the i8kutils package because the program is designed
+to be run by normal users. If you want to use it as daemon you must create
+the config file yourself. In this case, the \fB\-\-nouserconfig\fR option
+can sometimes also help by limiting it to sourcing /etc/i8kmon (and not
+~/.i8kmon).
 .SH "FILES"
 .LP 
 \fI/proc/i8k\fP
 .br 
-\fI/etc/i8kmon\fP
+\fI/etc/default/i8kmon\fP
 .br 
 \fI/$HOME/.i8kmon\fP
 .SH "AUTHORS"

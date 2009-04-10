@@ -1,5 +1,16 @@
-I8KUTILS FOR LINUX - VERSION 1.27
+I8KUTILS FOR LINUX - VERSION 1.28
 =================================
+
+
+IMPORTANT!
+==========
+
+This software is no longer maintained by me. I don't use it anymore and I'm
+not interested in maintaing it. Please DON'T SEND BUG REPORT OR PATCHES.
+
+
+OVERVIEW
+========
 
 This package contains a kernel driver and user-space programs for accessing
 the SMM BIOS of Dell Inspiron and Latitude laptops. The SMM BIOS is used on
@@ -52,8 +63,8 @@ LICENCE
 This software is released under the terms of the GNU General Public
 Licence.
 
-   Copyright (C) 2001-2005 Massimo Dal Zotto <dz@debian.org>
-
+   Copyright (C) 2001-2009 Massimo Dal Zotto <dz@debian.org>
+   
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -65,8 +76,8 @@ Licence.
    GNU General Public License for more details.
    
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+   along with this program; if not, write to the Free Software Foundation,
+   Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
 
 On Debian GNU/Linux systems, the complete text of the GNU General
 Public License can be found in `/usr/share/common-licenses/GPL'.
@@ -302,7 +313,8 @@ The program can be run as daemon or as an applet which can be embedded in
 the Gnome panel (No, I don't use KDE). The program requires Tcl/Tk (>= 8.0).
 
 The program has builtin defaults and temperature thresholds but users can
-specify their own settings in configuration files /etc/i8kmon and ~/.i8kmon.
+specify their own settings in configuration files /etc/default/i8kmon
+and ~/.i8kmon.
 The daemon defines 4 states with different fan speeds ({0 0}, {1 0}, {1 1},
 {2 2}) and for each state are defined the temperature thresholds which cause
 the switching to a higher or lower state. Furthermore each state can have
@@ -355,12 +367,12 @@ i.e. it won't work with tcl8.4 and tk8.3.
 
 This program can be used by normal users as Gnome panel applet or started
 as daemon by an init script. Under Debian GNU/Linux it is possible to start
-the daemon automatically by creating an /etc/i8kmon configfile containing
-the line "set config(daemon) 1".
+the daemon automatically by creating an /etc/default/i8kmon configfile
+containing the line "set config(daemon) 1".
 
-Note the the /etc/i8kmon configfile is not installed by the i8kutils package
-because the program is designed to be run by normal users. If you want to use
-it as daemon you must create the config file yourself.
+Note the the /etc/default/i8kmon configfile is not installed by the i8kutils
+package because the program is designed to be run by normal users. If you
+want to use it as daemon you must create the config file yourself.
 
 
 THE I8KBUTTONS DAEMON
@@ -388,13 +400,13 @@ COMMAND-LINE OPTIONS AND SPECIFY YOUR OWN COMMANDS!
 
 This program can be used by normal users or started as daemon by an init
 script. Under Debian GNU/Linux it is possible to start automatically the
-daemon at boot by creating an /etc/i8kbuttons configfile and setting the
-I8KBUTTONS_UP_CMD, I8KBUTTONS_DOWN_CMD and I8KBUTTONS_MUTE_CMD variables
+daemon at boot by creating an /etc/default/i8kbuttons configfile and setting
+the I8KBUTTONS_UP_CMD, I8KBUTTONS_DOWN_CMD and I8KBUTTONS_MUTE_CMD variables
 with the command which must be executed by the program.
 
-Note the the /etc/i8kbuttons configfile is not installed by the i8kutils
-package because the program is usually run by normal users. If you want to
-use it as daemon you must create the config file yourself.
+Note the the /etc/default/i8kbuttons configfile is not installed by the
+i8kutils package because the program is usually run by normal users.
+If you want to use it as daemon you must create the config file yourself.
 
 
 THE I8000 MULTIMEDIA BUTTONS
@@ -506,8 +518,8 @@ You can also include the i8k code directly in the kernel but I don't recommend
 it because it makes debugging more difficult.
 
 
-BIOS BUGS
-=========
+DELL INSPIRON 8000 BIOS BUGS
+============================
 
 Yes, the Dell BIOS has many bugs. I have found the following in I8K BIOS A17:
 

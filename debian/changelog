@@ -1,3 +1,30 @@
+i8kutils (1.30) unstable; urgency=low
+
+  * Fix init script pid file creation.
+  * Correct i8kmon config file name.
+
+ -- Bradley Smith <bradsmith@debian.org>  Fri, 10 Apr 2009 19:08:53 +0100
+
+i8kutils (1.29) unstable; urgency=low
+
+  * New maintainer. Closes: #522797.
+  * debian/control
+    - Update Standards-Version to 3.8.1.
+    - Upgrade compat version to 7 and debhelper Build-Depends.
+  * Tidy up debian/rules.
+  * Improve init scripts.
+  * Add nouserconfig patch. Thanks to Rowan Thorpe
+    <rowanthorpe@yahoo.co.uk>. Closes: #443421.
+
+ -- Bradley Smith <bradsmith@debian.org>  Tue, 07 Apr 2009 17:10:03 +0100
+
+i8kutils (1.28) unstable; urgency=low
+
+  * Moved /etc/i8kbuttons to /etc/default/i8kbuttons. (Closes: #519812)
+  * Package is orphaned (#522797); set maintainer to Debian QA Group.
+
+ -- Massimo Dal Zotto <dz@debian.org>  Mon, 06 Apr 2009 16:41:29 +0200
+
 i8kutils (1.27+nmu2) unstable; urgency=low
 
   * Fix a bashism in the i8kbuttons init script.  (Closes: #518205)

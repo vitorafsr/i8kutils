@@ -1,0 +1,27 @@
+# /etc/default/i8kbuttons
+
+# Change to one to enable i8kbuttons
+ENABLED=0
+
+# Change these sample commands with your mixer commands!!!
+#I8KBUTTONS_UP_CMD="echo up"
+#I8KBUTTONS_DOWN_CMD="echo down"
+#I8KBUTTONS_MUTE_CMD="echo mute"
+
+# Poll interval (milliseconds)
+#I8KBUTTONS_TIMEOUT=100
+
+# Autorepeat interval (milliseconds)
+#I8KBUTTONS_REPEAT=0
+
+# Set kernel keycodes (for kernel 2.6.x). Set to "true" to enable.
+#I8KBUTTONS_SETKEYCODES=false
+
+# Kernel scancodes and keycodes
+#I8K_SCAN_PLAY="e001"; I8K_KEY_PLAY="171"
+#I8K_SCAN_STOP="e002"; I8K_KEY_STOP="172"
+#I8K_SCAN_PREV="e003"; I8K_KEY_PREV="187"
+#I8K_SCAN_NEXT="e004"; I8K_KEY_NEXT="189"
+#I8K_SCAN_MUTE="e020"; I8K_KEY_MUTE="113"
+#I8K_SCAN_VOLD="e02e"; I8K_KEY_VOLD="114"
+#I8K_SCAN_VOLU="e030"; I8K_KEY_VOLU="115"

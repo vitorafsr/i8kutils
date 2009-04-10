@@ -15,8 +15,8 @@
 PKGNAME	      = $(shell head -1 debian/changelog | sed 's/ .*//')
 VERSION	      = $(shell head -1 debian/changelog | sed 's/.*(//;s/).*//')
 ARCHITECTURE  = $(shell dpkg --print-installation-architecture)
-PKGFILE	      = ../$(PKGNAME)_$(VERSION)_$(ARCHITECTURE).deb
-CHGFILE	      = ../$(PKGNAME)_$(VERSION)_$(ARCHITECTURE).changes
+PKGFILE	      = $(PKGNAME)_$(VERSION)_$(ARCHITECTURE).deb
+CHGFILE	      = $(PKGNAME)_$(VERSION)_$(ARCHITECTURE).changes
 
 # Override with: make module KERNEL_SOURCE=/usr/src/kernel-headers-2.4.17
 KERNEL_SOURCE = /lib/modules/`uname -r`/build
@@ -76,21 +76,22 @@ package:
 		dpkg-buildpackage -rfakeroot
 
 upload:
-		grep -q "BEGIN PGP SIGNED MESSAGE" $(CHGFILE)
-		dupload $(CHGFILE)
+		cd .. \
+		&& grep -q "BEGIN PGP SIGNED MESSAGE" $(CHGFILE) \
+		&& dupload $(CHGFILE)
 
 # Build the debian package
 deb:
 		dpkg-buildpackage -rfakeroot -us -uc
 
 debinst:
-		sudo dpkg -i $(PKGFILE)
+		cd .. && sudo dpkg -i $(PKGFILE)
 
 debclean:
 		-fakeroot ./debian/rules clean
 
 lintian:
-		lintian -i $(PKGFILE)
+		cd .. && lintian -i $(PKGFILE)
 
 dist:		distclean debclean
 		-make module kmodclean

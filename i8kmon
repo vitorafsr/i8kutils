@@ -25,7 +25,7 @@ MAKE_LINTIAN_HAPPY '
 set PROG_VERSION "v1.27 17/06/2005"
 
 array set config {
-    sysconfig	/etc/i8kmon
+    sysconfig	/etc/i8kmon.conf
     userconfig	~/.i8kmon
     proc_i8k	/proc/i8k
     proc_apm	/proc/apm
@@ -33,6 +33,7 @@ array set config {
     proc_ac26	/proc/acpi/ac_adapter/AC/state
     i8kfan	/usr/bin/i8kfan
     geometry	{}
+    use_conf    1
     auto	0
     daemon	0
     verbose	0
@@ -86,13 +87,24 @@ proc read_config {} {
 	3	{{2 2}  70 128  75 128}
     }
 
-    foreach file [list $config(sysconfig) $config(userconfig)] {
+    foreach file [list $config(sysconfig)] {
 	if {[file exists $file]} {
 	    if {$config(verbose) != 0} {
 		puts "# reading $file"
 	    }
 	    source $file
 	}
+    }
+
+    if {$config(use_conf) != 0} {
+    foreach file [list $config(userconfig)] {
+        if {[file exists $file]} {
+            if {$config(verbose) != 0} {
+                puts "# reading $file"
+            }
+            source $file
+        }
+    }
     }
 
     set t_high 0
@@ -680,14 +692,15 @@ proc usage {} {
 
 Options:
 
-    -a|--auto			control automatically the fans
-    -na|--noauto		don\x27t control automatically the fans
-    -d|--daemon			run in daemon mode without user interface
-    -nd|--nodaemon		don\x27 run as daemon, open the user interface
-    -v|--verbose		report status on stdout
-    -g|--geometry <geometry>	set applet geometry
-    -t|--timeout <seconds>	set poll timeout
-    -u|--unit C|F		set temperature display unit
+    -a|--auto               control automatically the fans
+   -na|--noauto	            don\x27t control automatically the fans
+    -d|--daemon             run in daemon mode without user interface
+   -nd|--nodaemon           don\x27 run as daemon, open the user interface
+   -nc|--nouserconfig       don't use \$HOME/.i8kmon
+    -v|--verbose            report status on stdout
+    -g|--geometry <geom>    set applet geometry
+    -t|--timeout <secs>     set poll timeout
+    -u|--unit C|F           set temperature display unit
 
 "
 }
@@ -716,6 +729,9 @@ proc parse_options {} {
 	    --noauto - -na - -n {
 		set config(auto) 0
 	    }
+        --nouserconfig - -nc {
+        set config(use_conf) 0
+        }
 	    --verbose - -v {
 		set config(verbose) 1
 	    }
