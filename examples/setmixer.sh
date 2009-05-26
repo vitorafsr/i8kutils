@@ -18,23 +18,23 @@
 
 MASTER=`amixer get Master`;
 
-if [ "$1" == "mute" ]; then 
+if [ "$1" = "mute" ]; then 
 
   MASTER=`echo $MASTER | grep '\[on\]'`;
 
-  if [ "$MASTER" == "" ]; then
+  if [ "$MASTER" = "" ]; then
     amixer set Master unmute >/dev/null 2>&1
   else
     amixer set Master mute >/dev/null 2>&1
   fi
 
-elif [ "$1" == "up" ]; then
+elif [ "$1" = "up" ]; then
 
   MASTER=`echo $MASTER |awk '{ if (/%/) { gsub(/%\].*$/,""); gsub(/^.*\[/,""); print $0+5 }}'`
 
   amixer set Master ${MASTER}% >/dev/null 2>&1
 
-elif [ "$1" == "down" ]; then
+elif [ "$1" = "down" ]; then
 
   MASTER=`echo $MASTER |awk '{ if (/%/) { gsub(/%\].*$/,""); gsub(/^.*\[/,""); print $0-5 }}'`
 

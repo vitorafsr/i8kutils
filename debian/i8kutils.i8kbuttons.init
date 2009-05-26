@@ -60,7 +60,7 @@ case "$1" in
             exit 0
         fi
 
-    	i8k_setkeycodes &>/dev/null || true
+    	i8k_setkeycodes >/dev/null 2>&1 || true
     	test -n "$I8KBUTTONS_UP_CMD" -o \
 	         -n "$I8KBUTTONS_DOWN_CMD" -o \
 	         -n "$I8KBUTTONS_MUTE_CMD" \

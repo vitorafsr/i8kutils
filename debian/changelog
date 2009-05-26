@@ -1,3 +1,9 @@
+i8kutils (1.31) unstable; urgency=low
+
+  * Fix bashisms. Closes: #530099.
+
+ -- Bradley Smith <bradsmith@debian.org>  Tue, 26 May 2009 15:42:43 +0100
+
 i8kutils (1.30) unstable; urgency=low
 
   * Fix init script pid file creation.
