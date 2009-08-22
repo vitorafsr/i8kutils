@@ -1,13 +1,5 @@
-I8KUTILS FOR LINUX - VERSION 1.28
+I8KUTILS FOR LINUX - VERSION 1.32
 =================================
-
-
-IMPORTANT!
-==========
-
-This software is no longer maintained by me. I don't use it anymore and I'm
-not interested in maintaing it. Please DON'T SEND BUG REPORT OR PATCHES.
-
 
 OVERVIEW
 ========
@@ -159,7 +151,7 @@ reading the /proc/i8k file. For example:
     $ cat /proc/i8k
     1.0 A17 2J59L02 52 2 1 8040 6420 1 2
 
-The fields read from /proc/18k are:
+The fields read from /proc/i8k are:
 
     1.0 A17 2J59L02 52 2 1 8040 6420 1 2
     |   |   |       |  | | |    |    | |

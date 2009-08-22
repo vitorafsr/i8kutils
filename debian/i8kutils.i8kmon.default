@@ -1,4 +1,4 @@
 # /etc/default/i8kmon
 
-# Change to one enable i8kmon
+# Change to one to enable i8kmon
 ENABLED=0

@@ -1,3 +1,12 @@
+i8kutils (1.32) unstable; urgency=low
+
+  * Update README. Closes: #542637, #523615.
+  * Fix typo in i8kutils.i8kmon.default. Closes: #542517.
+  * Update Standards-Version to 3.8.3.
+  * Add Vcs-* entries.
+
+ -- Bradley Smith <bradsmith@debian.org>  Sat, 22 Aug 2009 12:25:59 +0100
+
 i8kutils (1.31) unstable; urgency=low
 
   * Fix bashisms. Closes: #530099.
