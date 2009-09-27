@@ -1,11 +1,9 @@
 Source: i8kutils
 Section: utils
 Priority: optional
-Maintainer: Bradley Smith <bradsmith@debian.org>
+Maintainer: Debian QA Group <packages@qa.debian.org>
 Build-Depends: debhelper (>= 7)
 Standards-Version: 3.8.3
-Vcs-Git: http://git.brad-smith.co.uk/git/debian/pkg-i8kutils.git
-Vcs-Browser: http://git.brad-smith.co.uk/?p=debian/pkg-i8kutils.git
 
 Package: i8kutils
 Architecture: i386 kfreebsd-i386 amd64 kfreebsd-amd64

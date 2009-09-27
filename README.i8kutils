@@ -43,7 +43,7 @@ job of the BIOS. The only difference is that my program works.
 The latest version of the i8kutils package, including the latest i8k kernel
 driver, can be downloaded from:
 
-    http://www.debian.org/~dz/i8k/
+    http://packages.debian.org/i8kutils
 
 The driver works only with kernels 2.4 onwards (i.e. 2.4, 2.5 and 2.6 are
 confirmed to work). There will not be a porting to older kernels.

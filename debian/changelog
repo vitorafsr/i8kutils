@@ -1,3 +1,10 @@
+i8kutils (1.33) unstable; urgency=low
+
+  * Fix download location in README. Closes: #546316.
+  * Orphan package.
+
+ -- Bradley Smith <bradsmith@debian.org>  Sun, 27 Sep 2009 14:05:19 +0100
+
 i8kutils (1.32) unstable; urgency=low
 
   * Update README. Closes: #542637, #523615.
