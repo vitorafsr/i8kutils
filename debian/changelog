@@ -1,3 +1,12 @@
+i8kutils (1.35) precise; urgency=low
+
+  * Fix BIOS version at 'i8kctl' text to stdout. Closes: #546325.
+  * Avoid multiple instances of i8kmon via 'service i8kmon start'. LP: #486483.
+  * Put i8kmon enabled by default at /etc/default/i8kmon.
+  * QA (group) upload.
+
+ -- Vitor Augusto <vitorafsr@gmail.com>  Thu, 30 May 2013 15:36:16 -0300
+
 i8kutils (1.34) precise; urgency=low
 
   * Correct global configuration filename to '/etc/i8kmon.conf'. LP: #799144.

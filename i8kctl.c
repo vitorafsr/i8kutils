@@ -22,30 +22,75 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <unistd.h>
 
 #include "i8k.h"
 
-#define PROG_VERSION "v1.5 10/11/2001"
+#define PROG_VERSION "v1.6 05/30/2013"
 
 static int i8k_fd;
 
 char *
 i8k_get_bios_version()
 {
-    char bios_version[4];
-    int args[1];
-    int rc;
+    char i8k_ioctl_bios_version[4];
 
-    if ((rc=ioctl(i8k_fd, I8K_BIOS_VERSION, &args)) < 0) {
-	return NULL;
+    char i8k_proc_format[16];
+    char i8k_proc_bios_version[4];
+    char i8k_proc_serial_version[16];
+    int i8k_proc_cpu_temp;
+    int i8k_proc_left_fan;
+    int i8k_proc_right_fan;
+    int i8k_proc_left_speed;
+    int i8k_proc_right_speed;
+    int i8k_proc_ac_power;
+    int i8k_proc_fn_key;
+
+    char proc_i8k_str[64];
+    int args[1];
+    int rc_read;
+    int ret_nargs;
+
+    if ((rc_read=read(i8k_fd, proc_i8k_str, 64*sizeof(char))) != -1) {
+
+        ret_nargs = sscanf(proc_i8k_str, "%s %s %s %d %d %d %d %d %d %d\n",
+               i8k_proc_format,
+               i8k_proc_bios_version,
+               i8k_proc_serial_version,
+               &i8k_proc_cpu_temp,
+               &i8k_proc_left_fan,
+               &i8k_proc_right_fan,
+               &i8k_proc_left_speed,
+               &i8k_proc_right_speed,
+               &i8k_proc_ac_power,
+               &i8k_proc_fn_key);
+
+        if (ret_nargs == 10) {
+            if (strncmp(i8k_proc_format, I8K_PROC_FMT, 16) == 0) {
+
+                // Stop this function here and return.
+                // Information from /proc/i8k is more reliable.
+                // So it is preferred here.
+                // The kernel module i8k has a bug in which ioctl for bios
+                // version only consults SMM BIOS, and not DMI table as it is
+                // the case. The information of bios version in
+                // '/proc/i8k' is from both sources.
+                return strdup(i8k_proc_bios_version);
+            }
+
+        }
     }
 
-    bios_version[0] = (args[0] >> 16) & 0xff;
-    bios_version[1] = (args[0] >>  8) & 0xff;
-    bios_version[2] = (args[0]      ) & 0xff;
-    bios_version[3] = '\0';
+    // Useless in some Dell systens for i8k kernel module dated 2013-05-30.
+    if (ioctl(i8k_fd, I8K_BIOS_VERSION, &args) != 0) {
+        i8k_ioctl_bios_version[0] = (args[0] >> 16) & 0xff;
+        i8k_ioctl_bios_version[1] = (args[0] >>  8) & 0xff;
+        i8k_ioctl_bios_version[2] = (args[0]      ) & 0xff;
+        i8k_ioctl_bios_version[3] = '\0';
+        return strdup(i8k_ioctl_bios_version);
+    }
 
-    return strdup(bios_version);
+    return 0;
 }
 
 char *

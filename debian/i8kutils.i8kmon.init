@@ -53,7 +53,7 @@ case "$1" in
             exit 1
         fi
 	    start-stop-daemon --start --quiet --pidfile $PIDFILE \
-    	    --background --make-pidfile --exec $DAEMON -- $I8KMON_ARGS
+    	    --background --make-pidfile --startas $DAEMON -- $I8KMON_ARGS
         log_end_msg $?
     	;;
     stop)
