@@ -19,7 +19,7 @@ PKGFILE	      = $(PKGNAME)_$(VERSION)_$(ARCHITECTURE).deb
 CHGFILE	      = $(PKGNAME)_$(VERSION)_$(ARCHITECTURE).changes
 
 # Override with: make module KERNEL_SOURCE=/usr/src/kernel-headers-2.4.17
-KERNEL_SOURCE = /lib/modules/`uname -r`/build
+KERNEL_SOURCE = /lib/modules/$(shell uname -r)/build
 PREFIX	      = /usr
 POLL_TIMEOUT  = 100
 #MODVERSIONS  = -DMODVERSIONS
@@ -29,7 +29,8 @@ DISTFILE      = i8kutils-$(VERSION).tar.bz2
 SIGNFILE      = $(DISTFILE).sign
 SRCDIR        = $(shell pwd | sed 's|.*/||g')
 CC            = gcc
-CFLAGS        = -O2 -Wall
+#CFLAGS        = -O2 -Wall
+ccflags-y     = -O2 -Wall
 KERNEL_FLAGS  = -D__KERNEL__ -DMODULE $(MODVERSIONS)
 BINDIR	      = $(PREFIX)/bin
 SBINDIR	      = $(PREFIX)/sbin
@@ -105,7 +106,7 @@ module:		i8k.ko
 modversion:
 		$(MAKE) i8k.o MODVERSIONS=-DMODVERSIONS
 
-i8k.ko:		i8k.c
+i8k.ko:		i8k.c i8k.h
 		make -C $(KERNEL_SOURCE) M=$(PWD) modules
 
 i8k.o:		i8k.c

@@ -1,3 +1,11 @@
+i8kutils (1.36) precise; urgency=low
+
+  * Update i8k.c with the most recent version from the kernel mainline.
+  * Update README.
+  * QA (group) upload.
+
+ -- Vitor Augusto <vitorafsr@gmail.com>  Mon, 03 Jun 2013 22:06:13 -0300
+
 i8kutils (1.35) precise; urgency=low
 
   * Fix BIOS version at 'i8kctl' text to stdout. Closes: #546325.

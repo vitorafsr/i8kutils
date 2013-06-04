@@ -31,7 +31,7 @@ PROC_I8K=/proc/i8k
 DESC="Dell Inspiron fan/cpu-temperature monitor"
 I8KMON_ARGS="--daemon --nouserconfig"
 PIDFILE=/var/run/$NAME.pid
-ENABLED=0
+ENABLED=1
 
 test -x $DAEMON || exit 5
 

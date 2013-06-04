@@ -69,19 +69,18 @@ i8k_get_bios_version()
             if (strncmp(i8k_proc_format, I8K_PROC_FMT, 16) == 0) {
 
                 // Stop this function here and return.
-                // Information from /proc/i8k is more reliable.
+                // Information from /proc/i8k is more complete.
                 // So it is preferred here.
-                // The kernel module i8k has a bug in which ioctl for bios
-                // version only consults SMM BIOS, and not DMI table as it is
-                // the case. The information of bios version in
-                // '/proc/i8k' is from both sources.
+                // ioctl for BIOS version at the kernel module i8k returns
+                // only the SMM version. The information of bios version in
+                // '/proc/i8k' is from SMM data and DMI table.
                 return strdup(i8k_proc_bios_version);
             }
 
         }
     }
 
-    // Useless in some Dell systens for i8k kernel module dated 2013-05-30.
+    // Useless in some Dell systems for i8k kernel module dated 2013-05-30.
     if (ioctl(i8k_fd, I8K_BIOS_VERSION, &args) != 0) {
         i8k_ioctl_bios_version[0] = (args[0] >> 16) & 0xff;
         i8k_ioctl_bios_version[1] = (args[0] >>  8) & 0xff;
