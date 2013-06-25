@@ -1,0 +1,15 @@
+#!/bin/bash
+I8KCTL=/usr/bin/i8kctl
+
+if [ -x $I8KCTL ]; then
+	if [[ "$@" == "-h" ]]; then
+		echo "Usage: i8kfan [left right]";
+		echo "       i8kfan [-v]";
+	elif [[ "$@" == "-v" ]]; then
+		exec $I8KCTL "-v";
+	else
+		exec $I8KCTL "fan" "$@";
+	fi
+else
+	echo "Error: i8kfan needs $I8KCTL";
+fi

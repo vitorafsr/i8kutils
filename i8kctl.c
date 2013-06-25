@@ -314,24 +314,16 @@ status()
 }
 
 void
-usage(char *progname)
+usage()
 {
-    printf("Usage: %s [-v] "
-	   "[fan [<l> <r>] | speed | version | bios | id | temp | ac | fn]\n",
-	   progname);
+    printf("Usage: i8kctl [-v] [fan [<l> <r>] | speed | version | bios | id | temp" \
+           "| ac | fn]\n");
+    printf("       i8kctl [-h]\n");
 }
 
 int
 main(int argc, char **argv)
 {
-    char *progname;
-
-    if ((progname=strrchr(argv[0],'/'))) {
-	progname++;
-    } else {
-	progname = argv[0];
-    }
-
     if (argc >= 2) {
 	if ((strcmp(argv[1],"-v")==0) || (strcmp(argv[1],"--version")==0)) {
 	    argc--; argv++;
@@ -340,7 +332,7 @@ main(int argc, char **argv)
     }
     if (argc >= 2) {
 	if ((strcmp(argv[1],"-h")==0) || (strcmp(argv[1],"--help")==0)) {
-	    usage(progname);
+	    usage();
 	    exit(0);
 	}
     }
@@ -349,11 +341,6 @@ main(int argc, char **argv)
     if (i8k_fd < 0) {
 	perror("can't open " I8K_PROC);
 	exit(1);
-    }
-
-    /* If called as i8kfan emulate the old program */
-    if (strcmp(progname,"i8kfan")==0) {
-	return fan(argc,argv);
     }
 
     /* No args, print the i8k status like /proc/i8k */

@@ -1,18 +1,18 @@
 Source: i8kutils
 Section: utils
 Priority: optional
-Maintainer: Debian QA Group <packages@qa.debian.org>
+Maintainer: Vitor Augusto <vitorafsr@gmail.com>
 Build-Depends: debhelper (>= 8)
 Standards-Version: 3.9.3
 
 Package: i8kutils
 Architecture: i386 kfreebsd-i386 amd64 kfreebsd-amd64
-Depends: ${shlibs:Depends}, tk8.4 | wish, ${misc:Depends}
+Depends: ${shlibs:Depends}, tk8.4 | wish, ${misc:Depends}, acpi
 Conflicts: i8kfan
 Replaces: i8kfan
-Description: utilities for Dell Inspiron and Latitude laptops
- This is a collection of utilities to control Dell Inspiron and Latitude
- laptops. It includes programs to turn the fan on and off, to read fan
+Description: utilities for Dell laptops
+ This is a collection of utilities to control Dell
+ laptops fans. It includes programs to turn the fan on and off, to read fan
  status, CPU temperature, BIOS version and to handle the volume buttons
  and Fn-keys.
  .
@@ -20,10 +20,8 @@ Description: utilities for Dell Inspiron and Latitude laptops
  the GNOME panel, which monitors the CPU temperature and controls
  automatically the fans accordingly to user defined thresholds.
  .
- The programs require the kernel module i8k.o which can be compiled from
+ The programs require the kernel module i8k.ko which can be compiled from
  the package sources or found in Linux kernel 2.4.14 and later versions.
- The kernel module has been tested only on Inspiron 8000 laptops but it
- should work on any Inspiron and Latitude laptops.
 
 Package: i8kutils-smm
 Architecture: i386 kfreebsd-i386 amd64 kfreebsd-amd64

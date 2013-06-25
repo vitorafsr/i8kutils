@@ -43,18 +43,16 @@ ifdef MODVERSIONS
   INCLUDE    +=	-include $(KERNEL_SOURCE)/include/linux/modversions.h
 endif
 
-all:		i8kbuttons i8kctl i8kmon
+all:		i8kbuttons i8kctl
 
 i8kbuttons:	i8kbuttons.c
 		$(CC) -g $(CFLAGS) -DPOLL_TIMEOUT=$(POLL_TIMEOUT) -I. -o $@ $<
 
 i8kctl:		i8kctl.c
 		$(CC) -g $(CFLAGS) -I. -o $@ $<
-		ln -fs $@ i8kfan
 
-install:	i8kbuttons i8kctl i8kmon
-		cp -fp i8kbuttons i8kctl i8kmon $(DESTDIR)/$(BINDIR)/
-		ln -fs i8kctl $(DESTDIR)/$(BINDIR)/i8kfan
+install:	i8kbuttons i8kctl i8kmon i8kfan
+		cp -fp i8kbuttons i8kctl i8kmon i8kfan $(DESTDIR)/$(BINDIR)/
 
 install-smm:	smm
 		cp -fp smm smm-test $(DESTDIR)/$(SBINDIR)/
@@ -70,7 +68,7 @@ clean:
 		rm -rf *~ *.o *.ko i8k.mod.* .i8k.* .tmp_versions linux "#*#"
 
 distclean:	clean
-		rm -f i8kbuttons i8kctl i8kfan smm
+		rm -f i8kbuttons i8kctl smm
 
 # Build the official debian package
 package:
@@ -137,7 +135,7 @@ smm:		smm.c
 		$(CC) -g $(CFLAGS) -I. -o $@ $<
 
 # Build the i8kutils-smm package. This package is for private use and must
-# not be distributed with debian or any other distribution. 
+# not be distributed with debian or any other distribution.
 smm-deb:
 		fakeroot ./debian/rules smm-deb
 

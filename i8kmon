@@ -4,6 +4,7 @@
 #	    The program can be run in background as daemon or under X as an
 #	    applet swallowed in the gnome panel.
 #
+# Copyright (C) 2013-2013  i8kutils <https://launchpad.net/i8kutils>
 # Copyright (C) 2001-2005  Massimo Dal Zotto <dz@debian.org>
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -22,15 +23,12 @@ exec tclsh $0 -- "$@"
 #\
 MAKE_LINTIAN_HAPPY '
 
-set PROG_VERSION "v1.27 17/06/2005"
+set PROG_VERSION "v1.28 06/09/2013"
 
 array set config {
     sysconfig	/etc/i8kmon.conf
     userconfig	~/.i8kmon
     proc_i8k	/proc/i8k
-    proc_apm	/proc/apm
-    proc_ac24	/proc/acpi/ac_adapter/0/status
-    proc_ac26	/proc/acpi/ac_adapter/AC/state
     i8kfan	/usr/bin/i8kfan
     geometry	{}
     use_conf    1
@@ -52,7 +50,7 @@ array set status {
     right	{}
     timer	{}
     nfans	2
-    apm_timer	0
+    acpi_timer	0
     state	0
     temp	0
     lstate	0
@@ -222,87 +220,24 @@ proc read_ac_status {} {
     global status
 
     # Read ac status once per minute
-    if {[incr status(apm_timer) -1] > 0} {
+    if {[incr status(acpi_timer) -1] > 0} {
 	return 1
     }
-    set status(apm_timer) [expr 60 / $config(timeout)]
+    set status(acpi_timer) [expr 60 / $config(timeout)]
 
-    if {[info exists status(proc_apm)] || [file exists $config(proc_apm)]} {
-	if {[read_apm_status]} return
+    set cmd "acpi -a"; set info [eval exec $cmd]
+    set ret [string first "on-line" $info]
+    if {$ret == -1} {
+        set status(ac) 0
+    } else {
+        set status(ac) 1
     }
-    if {[info exists status(proc_ac24)] || [file exists $config(proc_ac24)]} {
-	if {[read_ac24_status]} return
+
+    if {$config(verbose) > 0} {
+	puts "[clock seconds] acpi: $info"
     }
-    if {[info exists status(proc_ac26)] || [file exists $config(proc_ac26)]} {
-	if {[read_ac26_status]} return
-    }
+
     return 0
-}
-
-proc read_apm_status {} {
-    global config
-    global status
-
-    if {![info exists status(proc_apm)] && ![open_proc_apm]} {
-	return 0
-    }
-
-    set info [seek $status(proc_apm) 0; read -nonewline $status(proc_apm)]
-    if {[lindex $info 3] == "0x01"} {
-	set status(ac) 1
-    } else {
-	set status(ac) 0
-    }
-
-    if {$config(verbose) > 0} {
-	puts "[clock seconds] apm: $info"
-    }
-
-    return 1
-}
-
-proc read_ac24_status {} {
-    global config
-    global status
-
-    if {![info exists status(proc_ac24)] && ![open_proc_ac24]} {
-	return 0
-    }
-
-    set info [seek $status(proc_ac24) 0; read -nonewline $status(proc_ac24)]
-    if {[lindex $info 1] == "on-line"} {
-	set status(ac) 1
-    } else {
-	set status(ac) 0
-    }
-
-    if {$config(verbose) > 0} {
-	puts "[clock seconds] acpi: $info"
-    }
-
-    return 1
-}
-
-proc read_ac26_status {} {
-    global config
-    global status
-
-    if {![info exists status(proc_ac26)] && ![open_proc_ac26]} {
-	return 0
-    }
-
-    set info [seek $status(proc_ac26) 0; read -nonewline $status(proc_ac26)]
-    if {[lindex $info 1] == "on-line"} {
-	set status(ac) 1
-    } else {
-	set status(ac) 0
-    }
-
-    if {$config(verbose) > 0} {
-	puts "[clock seconds] acpi: $info"
-    }
-
-    return 1
 }
 
 proc open_proc_i8k {} {
@@ -324,31 +259,6 @@ proc open_proc_i8k {} {
 
     if {[lindex $info 0] != "1.0" || [llength $info] < 10} {
 	close $status(proc_i8k); unset status(proc_i8k)
-	return 0
-    }
-
-    return 1
-}
-
-proc open_proc_apm {} {
-    global config
-    global status
-
-    if {$config(verbose) > 0} {
-	puts "[clock seconds] opening $config(proc_apm)"
-    }
-
-    if {[catch {set status(proc_apm) [open $config(proc_apm)]}]} {
-	return 0
-    }
-
-    if {[catch {set info [read -nonewline $status(proc_apm)]}]} {
-	close $status(proc_apm); unset status(proc_apm)
-	return 0
-    }
-
-    if {[llength $info] < 9} {
-	close $status(proc_apm); unset status(proc_apm)
 	return 0
     }
 
@@ -401,18 +311,6 @@ proc close_procfs {} {
     if {[info exists status(proc_i8k)]} {
 	catch {close $status(proc_i8k)}
 	unset status(proc_i8k)
-    }
-    if {[info exists status(proc_apm)]} {
-	catch {close $status(proc_apm)}
-	unset status(proc_apm)
-    }
-    if {[info exists status(proc_ac24)]} {
-	catch {close $status(proc_ac24)}
-	unset status(proc_ac24)
-    }
-    if {[info exists status(proc_ac26)]} {
-	catch {close $status(proc_ac26)}
-	unset status(proc_ac26)
     }
 }
 
@@ -755,7 +653,7 @@ proc parse_options {} {
     }
 
     if {$config(verbose) > 0} {
-	set copyright "Copyright (C) 2001 Massimo Dal Zotto <dz@debian.org>"
+	set copyright "Copyright (C) 2013 i8kutils <https://launchpad.net/i8kutils>"
 	puts "i8kmon $PROG_VERSION - $copyright"
 	parray config
     }

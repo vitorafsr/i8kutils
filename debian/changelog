@@ -1,3 +1,12 @@
+i8kutils (1.37) precise; urgency=low
+
+  * Fix bug where i8kfan needs a 'fan' argument. LP: #1104842.
+    - i8kfan does not need this argument anymore.
+  * Update 'apm -> apci' in i8kmon.
+  * New maintainer. Closes: #548588.
+
+ -- Vitor Augusto <vitorafsr@gmail.com>  Fri, 07 Jun 2013 21:29:27 -0300
+
 i8kutils (1.36) precise; urgency=low
 
   * Update i8k.c with the most recent version from the kernel mainline.

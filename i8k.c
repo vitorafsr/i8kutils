@@ -29,6 +29,8 @@
 #include <linux/mutex.h>
 #include <linux/hwmon.h>
 #include <linux/hwmon-sysfs.h>
+#include <linux/hrtimer.h>
+#include <linux/kernel.h>
 #include <asm/uaccess.h>
 #include <asm/io.h>
 
@@ -122,6 +124,12 @@ static inline const char *i8k_get_dmi_data(int field)
  */
 static int i8k_smm(struct smm_regs *regs)
 {
+    ktime_t calltime, delta, rettime;
+    unsigned long long duration;
+    int ret;
+
+    calltime = ktime_get();
+
 	int rc;
 	int eax = regs->eax;
 
@@ -178,7 +186,15 @@ static int i8k_smm(struct smm_regs *regs)
 	    :    "a"(regs)
 	    :    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
 #endif
-	if (rc != 0 || (regs->eax & 0xffff) == 0xffff || regs->eax == eax)
+
+    rettime = ktime_get();
+    delta = ktime_sub(rettime, calltime);
+    duration = (unsigned long long) ktime_to_ns(delta) >> 10;
+    printk(KERN_DEBUG "i8k_smm function took %lld usecs\n", duration);
+
+    dump_stack();
+
+    if (rc != 0 || (regs->eax & 0xffff) == 0xffff || regs->eax == eax)
 		return -EINVAL;
 
 	return 0;
