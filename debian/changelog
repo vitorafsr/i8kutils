@@ -1,3 +1,9 @@
+i8kutils (1.38.1) saucy; urgency=low
+
+  * Minor bug fix.
+
+ -- Vitor Augusto <vitorafsr@gmail.com>  Sat, 19 Oct 2013 19:25:17 -0300
+
 i8kutils (1.38) saucy; urgency=medium
 
   * Fix frezee in some systems. LP: #1179282.
