@@ -43,11 +43,13 @@ The latest version of the i8kutils package can be downloaded from:
 
     https://launchpad.net/i8kutils
 
-The i8k kernel module used to be shipped with this package. But so long
-it is in the kernel mainline, so it might be encontered in the kernel tree.
-To load this, just do 'modprobe i8k 'in the terminal as root. Just to make
-note, i8kmon program does that for you when is initialized. The module is
-available since kernels 2.4 onwards.
+The i8k module is in the kernel, and a copy of the source code is here for
+customization.
+
+To load this, just do 'modprobe i8k 'in the terminal as root. And just to
+notify, i8kmon program loads the module at startup.
+
+The module is available since kernels 2.4 onwards.
 
 
 LICENCE

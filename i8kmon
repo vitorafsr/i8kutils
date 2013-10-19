@@ -4,7 +4,7 @@
 #	    The program can be run in background as daemon or under X as an
 #	    applet swallowed in the gnome panel.
 #
-# Copyright (C) 2013-2013  i8kutils <https://launchpad.net/i8kutils>
+# Copyright (C) 2013       i8kutils <https://launchpad.net/i8kutils>
 # Copyright (C) 2001-2005  Massimo Dal Zotto <dz@debian.org>
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -23,7 +23,7 @@ exec tclsh $0 -- "$@"
 #\
 MAKE_LINTIAN_HAPPY '
 
-set PROG_VERSION "v1.28 06/09/2013"
+set PROG_VERSION "v1.29 06/25/2013"
 
 array set config {
     sysconfig	/etc/i8kmon.conf
@@ -32,8 +32,8 @@ array set config {
     i8kfan	/usr/bin/i8kfan
     geometry	{}
     use_conf    1
-    auto	0
-    daemon	0
+    auto	1
+    daemon	1
     verbose	0
     timeout	5
     unit	C
@@ -48,6 +48,8 @@ array set config {
 array set status {
     left	{}
     right	{}
+    leftspeed	"" # measured fan speeds
+    rightspeed	"" # measured fan speeds
     timer	{}
     nfans	2
     acpi_timer	0
@@ -70,60 +72,51 @@ proc read_config {} {
     global config
     global status
 
-    # I8000 A17 BIOS defaults:
-    # array set defaults {
-    #	0	{{0 0}  -1  76  -1  76}
-    #	1	{{1 0}  67  82  67  82}
-    #	2	{{1 1}  70  87  70  87}
-    #	3	{{2 2}  75 128  75 128}
-    # }
-
-    array set defaults {
-	0	{{0 0}  -1  60  -1  65}
-	1	{{1 0}  50  70  55  75}
-	2	{{1 1}  60  80  65  85}
-	3	{{2 2}  70 128  75 128}
-    }
-
-    foreach file [list $config(sysconfig)] {
-	if {[file exists $file]} {
-	    if {$config(verbose) != 0} {
-		puts "# reading $file"
-	    }
-	    source $file
+    # read system config file
+    if {[file exists $config(sysconfig)]} {
+	source $config(sysconfig)
+	if {$config(verbose) > 0} {
+	    puts "reading system config file"
 	}
     }
 
+    # read user config file
+    # as it is read last, the options here have precedence
     if {$config(use_conf) != 0} {
-    foreach file [list $config(userconfig)] {
-        if {[file exists $file]} {
-            if {$config(verbose) != 0} {
-                puts "# reading $file"
-            }
-            source $file
-        }
-    }
+        if {[file exists $config(userconfig)]} {
+            source $config(userconfig)
+	    if {$config(verbose) > 0} {
+		puts "reading user config file"
+	    }
+	}
     }
 
-    set t_high 0
     foreach key {0 1 2 3} {
-	if {![info exists config($key)]} {
-	    set config($key) $defaults($key)
-	}
 	set fans  [lindex $config($key) 0]
 	set lo_ac [lindex $config($key) 1]
 	set hi_ac [lindex $config($key) 2]
 	set lo_bt [lindex $config($key) 3]
 	set hi_bt [lindex $config($key) 4]
-	if {$hi_bt == {}} { set hi_bt [expr $hi_ac + 5] }
-	if {$lo_bt == {}} { set lo_bt [expr $lo_ac +10] }
-	if {$hi_ac < 128 && $hi_ac > $t_high} { set t_high $hi_ac }
-	if {$hi_bt < 128 && $hi_bt > $t_high} { set t_high $hi_bt }
+
+	# check that for each key hi temp > lo temp
+	if {$lo_ac > $hi_ac} { set hi_ac [expr $lo_ac + 5]}
+	if {$lo_bt > $hi_bt} { set hi_bt [expr $lo_bt + 5]}
+
+	# set temperature to -1 to lo_ac and lo_bt at config(0)
+	if {$key == 0} {
+	    set lo_ac -1
+	    set lo_bt -1
+	}
+
+	# set temperature to 128 to hi_ac and hi_bt at config(3)
+	if {$key == 3} {
+	    set hi_ac 128
+	    set hi_bt 128
+	}
+
 	set config($key) [list $fans $lo_ac $hi_ac $lo_bt $hi_bt]
     }
-    if {$config(t_high) == {} || $config(t_high) == 0} {
-	set config(t_high) $t_high
-    }
+
     set status(t_high) [lindex $config(0) 1]
 }
 
@@ -164,32 +157,28 @@ proc read_i8k_status {} {
     global config
     global status
 
-    if {![info exists status(proc_i8k)] && ![open_proc_i8k]} {
-	return 0
-    }
+    set temp [eval exec "i8kctl temp"]
+    set status(temp) $temp
+    set state [eval exec "i8kctl fan"]
+    set status(lstate) [lindex $state 0]
+    set status(rstate) [lindex $state 1]
 
-    set info [seek $status(proc_i8k) 0; read -nonewline $status(proc_i8k)]
-    # Uncomment to force high temp or one fan for debugging:
-    # set info [lreplace $info 3 3 80]
-    # set info [lreplace $info 5 5 -22]; set info [lreplace $info 7 7 -22]
-    # Undo kernel computation 30*speed if speed seems too high.
-    if {[lindex $info 6] > 20000} {
-	set info [lreplace $info 6 6 [expr [lindex $info 6]/30]]
+    # Set fan speed based on probed values. In some systems, query for fan speed
+    # is a slow call that freezes OS
+    if {$status(lstate) != -1} {
+	set status(lspeed) [lindex $status(leftspeed) $status(lstate)]
+    } else {
+	set status(lspeed) -1
     }
-    if {[lindex $info 7] > 20000} {
-	set info [lreplace $info 7 7 [expr [lindex $info 7]/30]]
+    if {$status(rstate) != -1} {
+	set status(rspeed) [lindex $status(rightspeed) $status(rstate)]
+    } else {
+	set status(rspeed) -1
     }
-
-    set status(temp)   [lindex $info 3]
-    set status(lstate) [lindex $info 4]
-    set status(rstate) [lindex $info 5]
-    set status(lspeed) [lindex $info 6]
-    set status(rspeed) [lindex $info 7]
 
     # If AC status is not available read it from procfs
-    if {[set ac [lindex $info 8]] >= 0} {
-	set status(ac) $ac
-    } else {
+    set ac [eval exec "i8kctl ac"]
+    if {$ac < 0} {
 	read_ac_status
     }
 
@@ -223,6 +212,7 @@ proc read_ac_status {} {
     if {[incr status(acpi_timer) -1] > 0} {
 	return 1
     }
+
     set status(acpi_timer) [expr 60 / $config(timeout)]
 
     set cmd "acpi -a"; set info [eval exec $cmd]
@@ -314,13 +304,6 @@ proc close_procfs {} {
     }
 }
 
-# Automatic fan control
-#
-#    0	{{0 0}  -1  60  -1  65 }
-#    1	{{1 0}  50  70  55  75 }
-#    2	{{1 1}  60  80  65  85 }
-#    3	{{2 2}  70 128  75 128 }
-#
 proc fan_control {} {
     global config
     global status
@@ -605,6 +588,7 @@ Options:
 
 proc parse_options {} {
     global config
+    global status
     global argv
     global PROG_VERSION
 
@@ -656,6 +640,7 @@ proc parse_options {} {
 	set copyright "Copyright (C) 2013 i8kutils <https://launchpad.net/i8kutils>"
 	puts "i8kmon $PROG_VERSION - $copyright"
 	parray config
+	parray status
     }
 }
 
@@ -667,7 +652,33 @@ proc trap_signals {} {
     }
 }
 
+proc probe_fan_speed {} {
+    global status
+
+    i8kfan 1 1
+    after 1000
+    set speeds [eval exec "i8kctl speed"]
+    set lspeed1 [lindex $speeds 0]
+    set rspeed1 [lindex $speeds 1]
+
+    i8kfan 2 2
+    after 1000
+    set speeds [eval exec "i8kctl speed"]
+    set lspeed2 [lindex $speeds 0]
+    set rspeed2 [lindex $speeds 1]
+
+    i8kfan 3 3
+    after 1000
+    set speeds [eval exec "i8kctl speed"]
+    set lspeed3 [lindex $speeds 0]
+    set rspeed3 [lindex $speeds 1]
+
+    set status(leftspeed) "0 $lspeed1 $lspeed2 $lspeed3"
+    set status(rightspeed) "0 $rspeed1 $rspeed2 $rspeed3"
+}
+
 proc main {} {
+    probe_fan_speed
     read_config
     parse_options
     make_ui

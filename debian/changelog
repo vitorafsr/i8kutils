@@ -1,3 +1,9 @@
+i8kutils (1.38) saucy; urgency=medium
+
+  * Fix frezee in some systems. LP: #1179282.
+
+ -- Vitor Augusto <vitorafsr@gmail.com>  Sat, 19 Oct 2013 15:54:41 -0300
+
 i8kutils (1.37) precise; urgency=low
 
   * Fix bug where i8kfan needs a 'fan' argument. LP: #1104842.
