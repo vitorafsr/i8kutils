@@ -7,7 +7,7 @@ Standards-Version: 3.9.3
 
 Package: i8kutils
 Architecture: i386 kfreebsd-i386 amd64 kfreebsd-amd64
-Depends: ${shlibs:Depends}, tk8.4 | wish, ${misc:Depends}, acpi
+Depends: ${shlibs:Depends}, ${misc:Depends}, tcl, tk, acpi
 Conflicts: i8kfan
 Replaces: i8kfan
 Description: utilities for Dell laptops

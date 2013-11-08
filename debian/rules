@@ -1,19 +1,15 @@
 #!/usr/bin/make -f
 
-CFLAGS = -Wall -g
-
-ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-	CFLAGS += -O0
-else
-	CFLAGS += -O2
-endif
+export CFLAGS := $(shell dpkg-buildflags --get CFLAGS)
+export CPPFLAGS := $(shell dpkg-buildflags --get CPPFLAGS)
+export LDFLAGS := $(shell dpkg-buildflags --get LDFLAGS)
 
 build: build-arch build-indep
 build-arch: build-stamp
 build-indep: build-stamp
 build-stamp:
 	dh_testdir
-	$(MAKE)
+	$(MAKE) CFLAGS="$(CFLAGS) $(CPPFLAGS) $(LDFLAGS)"
 	touch $@
 
 clean:
