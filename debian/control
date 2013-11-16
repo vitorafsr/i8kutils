@@ -3,13 +3,11 @@ Section: utils
 Priority: optional
 Maintainer: Vitor Augusto <vitorafsr@gmail.com>
 Build-Depends: debhelper (>= 8)
-Standards-Version: 3.9.3
+Standards-Version: 3.9.4
 
 Package: i8kutils
 Architecture: i386 kfreebsd-i386 amd64 kfreebsd-amd64
-Depends: ${shlibs:Depends}, ${misc:Depends}, tcl, tk, acpi
-Conflicts: i8kfan
-Replaces: i8kfan
+Depends: ${shlibs:Depends}, ${misc:Depends}, tcl, tk, acpi | acpitool
 Description: utilities for Dell laptops
  This is a collection of utilities to control Dell
  laptops fans. It includes programs to turn the fan on and off, to read fan
@@ -25,7 +23,7 @@ Description: utilities for Dell laptops
 
 Package: i8kutils-smm
 Architecture: i386 kfreebsd-i386 amd64 kfreebsd-amd64
-Depends: ${shlibs:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: smm test programs for Dell Inspiron and Latitude laptops
  This package contains the smm test program for Dell laptops.
  .

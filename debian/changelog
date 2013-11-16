@@ -1,3 +1,14 @@
+i8kutils (1.40) unstable; urgency=medium
+
+  * Fix i8kmon error in verbose mode.
+  * Fix dependency on 'acpi' for kFreeBSD.
+    - Add 'acpi | acpitool' in 'debian/control'
+  * Update Standards-Version to 3.9.4.
+  * Fix lintian warnings.
+  * Closes: #547210.
+
+ -- Vitor Augusto <vitorafsr@gmail.com>  Sat, 16 Nov 2013 16:16:53 -0200
+
 i8kutils (1.39) unstable; urgency=low
 
   * Fix frezee in some systems. LP: #1179282.
@@ -17,7 +28,7 @@ i8kutils (1.39) unstable; urgency=low
   * Switch to dpkg-source 3.0 (native) format.
   * New maintainer. Closes: #548588.
 
- -- Vitor Augusto <vitorafsr@gmail.com>  Sat, 21 Oct 2013 15:17:50 -0300
+ -- Vitor Augusto <vitorafsr@gmail.com>  Mon, 21 Oct 2013 15:17:50 -0300
 
 i8kutils (1.34) unstable; urgency=low
 

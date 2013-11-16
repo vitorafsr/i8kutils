@@ -23,7 +23,7 @@ exec tclsh $0 -- "$@"
 #\
 MAKE_LINTIAN_HAPPY '
 
-set PROG_VERSION "v1.29 06/25/2013"
+set PROG_VERSION "v1.30 11/16/2013"
 
 array set config {
     sysconfig	/etc/i8kmon.conf
@@ -196,11 +196,6 @@ proc read_i8k_status {} {
     if {$status(lspeed) < 0} { set status(lspeed) $config(min_speed) }
     if {$status(rspeed) < 0} { set status(rspeed) $config(min_speed) }
 
-    if {$config(verbose) > 0} {
-	set info [lreplace $info 8 8 $status(ac)]
-	puts "[clock seconds] $info"
-    }
-
     return 1
 }
 
@@ -215,16 +210,22 @@ proc read_ac_status {} {
 
     set status(acpi_timer) [expr 60 / $config(timeout)]
 
-    set cmd "acpi -a"; set info [eval exec $cmd]
-    set ret [string first "on-line" $info]
-    if {$ret == -1} {
-        set status(ac) 0
-    } else {
+    set cmd "acpi -a"; set acpi_ac [eval exec $cmd]
+    set cmd2 "acpitool -a"; set acpi_ac2 [eval exec $cmd2]
+    set ret [string first "on-line" $acpi_ac]
+	set ret2 [string first "online" $acpi_ac2]
+    if {$ret >= 0 | $ret2 >= 0} {
         set status(ac) 1
+    } else {
+        set status(ac) 0
     }
 
     if {$config(verbose) > 0} {
-	puts "[clock seconds] acpi: $info"
+        if {$ret >= 0} {
+            puts "[clock seconds] acpi: $acpi_ac"
+        } elseif {$ret2 >= 0} {
+            puts "[clock seconds] acpi: $acpi_ac2"
+        }
     }
 
     return 0
