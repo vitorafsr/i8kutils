@@ -9,6 +9,7 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Dell Inspiron volume buttons monitor
+# Description:       Enable service provided by daemon
 ### END INIT INFO
 #
 # i8kbuttons	Dell Inspiron volume buttons monitor
@@ -88,6 +89,9 @@ case "$1" in
     	log_end_msg $?
     	rm -f $PIDFILE
     	;;
+    status)
+        status_of_proc -p $PIDFILE $DAEMON $NAME
+        ;;
     restart|reload|force-reload)
         $0 stop && sleep 2 && $0 start
 	    ;;

@@ -97,7 +97,7 @@ the switching to a higher or lower state. Furthermore each state can have
 different thresholds for operation on ac power or battery.
 For example the following configuration:
 .IP
-set config(0) {{0 0}  -1  60  -1  65}
+set config(0) {{0 0}  "\-"1  60  "\-"1  65}
 .br
 set config(1) {{1 0}  50  70  55  75}
 .br
@@ -106,7 +106,7 @@ set config(2) {{1 1}  60  80  65  85}
 set config(3) {{2 2}  70 128  75 128}
 .LP
 defines state 0 with both fans off, high threshold of 60 degrees (65 on
-battery) and low threshold -1, which is actually never reached since 0 is the
+battery) and low threshold "\-"1, which is actually never reached since 0 is the
 lowest state. When the high threshold is reached the program switches to state
 1 (left low, right off) which has a high threshold of 70 degrees and a low
 threshold of 50 degrees. If the temperature drops below 50 the program will
@@ -114,7 +114,7 @@ switch back to state 0, if it rises above 70 it will enter state 2, and so on.
 For better operation the temperature ranges should be overlapping with an
 hysteresis of at least 10 degrees, i.e. 1={50 70},2={60 80} is better than
 1={50 70},2={70 80}. It must be rembered that the low threshold of state 0
-must be -1 and the high threshold of state 3 must be 128.
+must be "\-"1 and the high threshold of state 3 must be 128.
 .LP
 If your laptop has only one fan you should specify a '-' instead of the fan
 speed of the missing fan, for example:

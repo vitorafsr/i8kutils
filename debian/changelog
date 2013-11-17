@@ -269,7 +269,7 @@ i8kutils (1.14) unstable; urgency=low
 
  -- Massimo Dal Zotto <dz@debian.org>  Tue,  9 Jul 2002 23:30:46 +0200
 
-i8kutils (1.13) frozen unstable; urgency=high
+i8kutils (1.13) unstable; urgency=high
 
   * In i8k module added support for generating keyboard events.
 
@@ -277,7 +277,7 @@ i8kutils (1.13) frozen unstable; urgency=high
 
  -- Massimo Dal Zotto <dz@debian.org>  Tue, 14 May 2002 14:02:50 +0200
 
-i8kutils (1.12) frozen unstable; urgency=low
+i8kutils (1.12) unstable; urgency=low
 
   * In i8k module added restricted fan control option.
 
@@ -291,25 +291,25 @@ i8kutils (1.12) frozen unstable; urgency=low
 
  -- Massimo Dal Zotto <dz@debian.org>  Mon, 18 Mar 2002 17:18:49 +0100
 
-i8kutils (1.11) frozen unstable; urgency=low
+i8kutils (1.11) unstable; urgency=low
 
   * Added /proc/acpi support and setmixer.sh example.
 
  -- Massimo Dal Zotto <dz@debian.org>  Mon, 11 Feb 2002 10:04:27 +0100
 
-i8kutils (1.10) frozen unstable; urgency=low
+i8kutils (1.10) unstable; urgency=low
 
   * Removed version check in /proc/apm.
 
  -- Massimo Dal Zotto <dz@debian.org>  Sun, 10 Feb 2002 23:17:26 +0100
 
-i8kutils (1.9) frozen unstable; urgency=low
+i8kutils (1.9) unstable; urgency=low
 
   * Fixed high temperature display in i8kmon.
 
  -- Massimo Dal Zotto <dz@debian.org>  Sat, 29 Dec 2001 16:38:01 +0100
 
-i8kutils (1.8) frozen unstable; urgency=low
+i8kutils (1.8) unstable; urgency=low
 
   * Added Xmodmap and 40custom_load-xmodmap examples, updated README file.
     Closes: Bug#123801.
