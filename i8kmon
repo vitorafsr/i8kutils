@@ -324,8 +324,8 @@ proc make_ui {} {
 	return
     }
 
-    # Load Tk library (require a Tk version compatible with Tcl)
-    package require Tk $tcl_version
+    # Load Tk library (require a Tk version >=8.4)
+    package require Tk 8.4
     wm title . {}
     wm withdraw .
     update
