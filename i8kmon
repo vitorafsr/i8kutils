@@ -1,10 +1,8 @@
 #!/bin/sh
 #
-# i8kmon -- Monitor cpu temperature and fan status on Dell Inspiron laptops.
-#	    The program can be run in background as daemon or under X as an
-#	    applet swallowed in the gnome panel.
+# i8kmon -- Monitor the fan speed on Dell laptops.
 #
-# Copyright (C) 2013       i8kutils <https://launchpad.net/i8kutils>
+# Copyright (C) 2013       Vitor Augusto <vitorafsr@gmail.com>
 # Copyright (C) 2001-2005  Massimo Dal Zotto <dz@debian.org>
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -28,7 +26,6 @@ set PROG_VERSION "v1.30 11/16/2013"
 array set config {
     sysconfig	/etc/i8kmon.conf
     userconfig	~/.i8kmon
-    proc_i8k	/proc/i8k
     i8kfan	/usr/bin/i8kfan
     geometry	{}
     use_conf    1
@@ -135,11 +132,6 @@ proc check_status {} {
     global config
     global status
 
-    if {$status(suspend) == 1} {
-	close_procfs
-	return
-    }
-
     if {![read_i8k_status]} {
 	return
     }
@@ -229,80 +221,6 @@ proc read_ac_status {} {
     }
 
     return 0
-}
-
-proc open_proc_i8k {} {
-    global config
-    global status
-
-    if {$config(verbose) > 0} {
-	puts "[clock seconds] opening $config(proc_i8k)"
-    }
-
-    if {[catch {set status(proc_i8k) [open $config(proc_i8k)]}]} {
-	return 0
-    }
-
-    if {[catch {set info [read -nonewline $status(proc_i8k)]}]} {
-	close $status(proc_i8k); unset status(proc_i8k)
-	return 0
-    }
-
-    if {[lindex $info 0] != "1.0" || [llength $info] < 10} {
-	close $status(proc_i8k); unset status(proc_i8k)
-	return 0
-    }
-
-    return 1
-}
-
-proc open_proc_ac24 {} {
-    global config
-    global status
-
-    if {$config(verbose) > 0} {
-	puts "[clock seconds] opening $config(proc_ac24)"
-    }
-
-    if {[catch {set status(proc_ac24) [open $config(proc_ac24)]}]} {
-	return 0
-    }
-
-    if {[catch {set info [read -nonewline $status(proc_ac24)]}]} {
-	close $status(proc_ac24); unset status(proc_ac24)
-	return 0
-    }
-
-    return 1
-}
-
-proc open_proc_ac26 {} {
-    global config
-    global status
-
-    if {$config(verbose) > 0} {
-	puts "[clock seconds] opening $config(proc_ac26)"
-    }
-
-    if {[catch {set status(proc_ac26) [open $config(proc_ac26)]}]} {
-	return 0
-    }
-
-    if {[catch {set info [read -nonewline $status(proc_ac26)]}]} {
-	close $status(proc_ac26); unset status(proc_ac26)
-	return 0
-    }
-
-    return 1
-}
-
-proc close_procfs {} {
-    global status
-
-    if {[info exists status(proc_i8k)]} {
-	catch {close $status(proc_i8k)}
-	unset status(proc_i8k)
-    }
 }
 
 proc fan_control {} {
@@ -451,7 +369,7 @@ proc make_ui {} {
     place .i8kmon.lfan -relx 0.0 -rely 0.5 -relwidth 0.5 -relheight 0.5
     place .i8kmon.rfan -relx 0.5 -rely 0.5 -relwidth 0.5 -relheight 0.5
 
-    # Read /proc/i8k and set $status(lstate) and $status(rstate)
+    # Set $status(lstate) and $status(rstate)
     read_i8k_status
     if {$status(lstate) < 0} {
 	place forget .i8kmon.lfan
