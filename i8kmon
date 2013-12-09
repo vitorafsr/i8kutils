@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env tclsh
 #
 # i8kmon -- Monitor the fan speed on Dell laptops.
 #
@@ -14,12 +14,6 @@
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-#
-#\
-exec tclsh $0 -- "$@"
-
-#\
-MAKE_LINTIAN_HAPPY '
 
 set PROG_VERSION "v1.30 11/16/2013"
 
@@ -619,11 +613,3 @@ if {$tcl_interactive == 0} {
     vwait forever
 }
 
-#\
-MAKE_LINTIAN_HAPPY '
-
-# Local variables:
-# mode: tcl
-# End:
-
-# end of file

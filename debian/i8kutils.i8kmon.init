@@ -20,7 +20,8 @@
 #
 #		Modified for i8kutils by Karl E. Jørgensen <karl@jorgensen.com>,
 #		Massimo Dal Zotto <dz@debian.org> and
-#       Bradley Smith <bradsmith@debian.org>
+#		Bradley Smith <bradsmith@debian.org>
+#		Updated by Vitor Augusto <vitorafsr@gmail.com>.
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
@@ -70,7 +71,7 @@ case "$1" in
         $0 stop && sleep 2 && $0 start
 	    ;;
     *)
-    	echo "Usage: $0 {start|stop|restart|reload|force-reload}" >&2
+    	echo "Usage: $0 {start|stop|status|restart|reload|force-reload}" >&2
 	    exit 2
     	;;
 esac
