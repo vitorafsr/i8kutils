@@ -31,7 +31,7 @@ NAME=i8kmon
 DAEMON=/usr/bin/i8kmon
 PROC_I8K=/proc/i8k
 DESC="Dell Inspiron fan/cpu-temperature monitor"
-I8KMON_ARGS="--daemon --nouserconfig"
+I8KMON_ARGS="--daemon --nouserconfig --auto"
 PIDFILE=/var/run/$NAME.pid
 
 test -x $DAEMON || exit 5
