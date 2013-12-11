@@ -8,11 +8,11 @@
 # Should-Stop:       $local_fs
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Dell Inspiron fan/cpu-temperature monitor
+# Short-Description: Dell fan/cpu-temperature monitor
 # Description:       Enable service provided by daemon
 ### END INIT INFO
 
-# i8kmon	Dell Inspiron fan/cpu-temperature monitor
+# i8kmon	Dell fan/cpu-temperature monitor
 #
 #		Written by Miquel van Smoorenburg <miquels@cistron.nl>.
 #		Modified for Debian GNU/Linux
@@ -30,7 +30,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 NAME=i8kmon
 DAEMON=/usr/bin/i8kmon
 PROC_I8K=/proc/i8k
-DESC="Dell Inspiron fan/cpu-temperature monitor"
+DESC="Dell fan/cpu-temperature monitor"
 I8KMON_ARGS="--daemon --nouserconfig --auto"
 PIDFILE=/var/run/$NAME.pid
 

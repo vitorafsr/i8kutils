@@ -14,35 +14,17 @@ build-stamp:
 
 clean:
 	dh_testdir
-	dh_testroot
 	rm -f build-stamp
-	[ ! -f Makefile ] || $(MAKE) distclean
 	dh_clean
 
-install: build
+binary-indep: build
 	dh_testdir
 	dh_testroot
-	dh_prep
-	dh_installdirs
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/i8kutils
-
-install-smm: build
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
-	$(MAKE) install-smm DESTDIR=$(CURDIR)/debian/i8kutils-smm
-
-binary-indep: build install
-
-binary-arch: build install
-	dh_testdir
-	dh_testroot
+	dh_install -pi8kutils
 	dh_installchangelogs -pi8kutils
 	dh_installdocs -pi8kutils
-	dh_installexamples -pi8kutils
+	#dh_installexamples -pi8kutils
 	dh_installinit --name=i8kmon
-	dh_installinit --name=i8kbuttons
 	dh_installman *.1
 	ln -s i8kctl.1 $(CURDIR)/debian/i8kutils/usr/share/man/man1/i8kfan.1
 	dh_link -pi8kutils
@@ -50,25 +32,13 @@ binary-arch: build install
 	dh_compress -pi8kutils
 	dh_fixperms -pi8kutils
 	dh_installdeb -pi8kutils
-	dh_shlibdeps -pi8kutils
+	#dh_shlibdeps -pi8kutils
 	dh_gencontrol -pi8kutils
 	dh_md5sums -pi8kutils
 	dh_builddeb -pi8kutils
 
-smm-deb: build install-smm
-	dh_testdir
-	dh_testroot
-	dh_installchangelogs -pi8kutils-smm
-	dh_installdocs -pi8kutils-smm
-	dh_link -pi8kutils-smm
-	dh_strip -pi8kutils-smm
-	dh_compress -pi8kutils-smm
-	dh_fixperms -pi8kutils-smm
-	dh_installdeb -pi8kutils-smm
-	dh_shlibdeps -pi8kutils-smm
-	dh_gencontrol -pi8kutils-smm
-	dh_md5sums -pi8kutils-smm
-	dh_builddeb -pi8kutils-smm
+binary-arch:
 
 binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install
+
+.PHONY: build clean binary-indep binary-arch binary

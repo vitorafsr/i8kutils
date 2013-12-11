@@ -22,19 +22,3 @@ Description: Fan control for Dell laptops
  The programs require the kernel module i8k.ko which can be compiled from
  the package sources or found in Linux kernel 2.4.14 and later versions.
 
-Package: i8kutils-smm
-Architecture: i386 kfreebsd-i386 amd64 kfreebsd-amd64
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: smm test programs for Dell Inspiron and Latitude laptops
- This package contains the smm test program for Dell laptops.
- .
- THIS PROGRAM IS VERY DANGEROUS. IT CAN CRASH YOUR COMPUTER, DESTROY DATA
- ON THE HARDISK, CORRUPT THE BIOS, PHYSICALLY DAMAGE YOUR HARDWARE AND
- MAKE YOUR COMPUTER TOTALLY UNUSABLE.
- .
- DON'T USE THIS PROGRAM UNLESS YOU REALLY KNOW WHAT YOU ARE DOING. I WILL
- NOT BE RESPONSIBLE FOR ANY DIRECT OR INDIRECT DAMAGE CAUSED BY USING THIS
- PROGRAM.
- .
- THIS PACKAGE IS FOR PRIVATE USE AND MUST NOT BE DISTRIBUTED WITH DEBIAN
- OR ANY OTHER DISTRIBUTION.
