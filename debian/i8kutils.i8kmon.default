@@ -1,7 +1,0 @@
-# /etc/default/i8kmon
-
-# This file exist for compatibility. To disable a service, execute
-# 'update-rc.d i8kmon disable' at the terminal as root.
-
-# Change to zero to disable i8kmon
-ENABLED=1

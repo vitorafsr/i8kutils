@@ -33,7 +33,6 @@ PROC_I8K=/proc/i8k
 DESC="Dell Inspiron fan/cpu-temperature monitor"
 I8KMON_ARGS="--daemon --nouserconfig"
 PIDFILE=/var/run/$NAME.pid
-ENABLED=1
 
 test -x $DAEMON || exit 5
 
@@ -43,10 +42,6 @@ fi
 
 case "$1" in
     start)
-        if [ "$ENABLED" = 0 ]; then
-            log_warning_msg "Not starting. Disabled via /etc/default/$NAME."
-            exit 0
-        fi
 	    log_daemon_msg "Starting $DESC" "$NAME"
         modprobe i8k >/dev/null 2>&1 || true
 	    if [ ! -f "$PROC_I8K" ]; then
