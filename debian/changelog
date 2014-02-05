@@ -3,10 +3,11 @@ i8kutils (1.41) unstable; urgency=low
   * Probe 'acpi' and 'acpitool' before use.
   * LP: #1248254.
   * Put 'i8kmon' in auto mode by default.
+    - Remove '/etc/default/i8kmon' file
   * Update Standards-Version to 3.9.4.
   * Remove building 'i8kutils-smm'.
 
- -- Vitor Augusto <vitorafsr@gmail.com>  Wed, 11 Dec 2013 15:44:17 -0200
+ -- Vitor Augusto <vitorafsr@gmail.com>  Sun, 02 Feb 2014 10:44:17 -0200
 
 i8kutils (1.40) unstable; urgency=medium
 

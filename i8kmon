@@ -40,8 +40,8 @@ array set config {
 array set status {
     left	{}
     right	{}
-    leftspeed	"" # measured fan speeds
-    rightspeed	"" # measured fan speeds
+    leftspeed	{}
+    rightspeed	{}
     timer	{}
     nfans	2
     acpi_timer	0
@@ -65,10 +65,10 @@ proc read_config {} {
 
     # read system config file
     if {[file exists $config(sysconfig)]} {
-	source $config(sysconfig)
-	if {$config(verbose) > 0} {
-	    puts "reading system config file"
-	}
+    	source $config(sysconfig)
+	    if {$config(verbose) > 0} {
+	        puts "reading system config file"
+	    }
     }
 
     # read user config file
@@ -76,39 +76,37 @@ proc read_config {} {
     if {$config(use_conf) != 0} {
         if {[file exists $config(userconfig)]} {
             source $config(userconfig)
-	    if {$config(verbose) > 0} {
-		puts "reading user config file"
-	    }
-	}
+	        if {$config(verbose) > 0} {
+        		puts "reading user config file"
+	        }
+    	}
     }
 
     foreach key {0 1 2 3} {
-	set fans  [lindex $config($key) 0]
-	set lo_ac [lindex $config($key) 1]
-	set hi_ac [lindex $config($key) 2]
-	set lo_bt [lindex $config($key) 3]
-	set hi_bt [lindex $config($key) 4]
+	    set fans  [lindex $config($key) 0]
+	    set lo_ac [lindex $config($key) 1]
+	    set hi_ac [lindex $config($key) 2]
+	    set lo_bt [lindex $config($key) 3]
+	    set hi_bt [lindex $config($key) 4]
 
-	# check that for each key hi temp > lo temp
-	if {$lo_ac > $hi_ac} { set hi_ac [expr $lo_ac + 5]}
-	if {$lo_bt > $hi_bt} { set hi_bt [expr $lo_bt + 5]}
+	    # check that for each key hi temp > lo temp
+	    if {$lo_ac > $hi_ac} { set hi_ac [expr $lo_ac + 5]}
+	    if {$lo_bt > $hi_bt} { set hi_bt [expr $lo_bt + 5]}
 
-	# set temperature to -1 to lo_ac and lo_bt at config(0)
-	if {$key == 0} {
-	    set lo_ac -1
-	    set lo_bt -1
-	}
+	    # set temperature to -1 to lo_ac and lo_bt at config(0)
+	    if {$key == 0} {
+	        set lo_ac -1
+	        set lo_bt -1
+	    }
 
-	# set temperature to 128 to hi_ac and hi_bt at config(3)
-	if {$key == 3} {
-	    set hi_ac 128
-	    set hi_bt 128
-	}
+	    # set temperature to 128 to hi_ac and hi_bt at config(3)
+	    if {$key == 3} {
+	        set hi_ac 128
+	        set hi_bt 128
+	    }
 
-	set config($key) [list $fans $lo_ac $hi_ac $lo_bt $hi_bt]
+	    set config($key) [list $fans $lo_ac $hi_ac $lo_bt $hi_bt]
     }
-
-    set status(t_high) [lindex $config(0) 1]
 }
 
 proc status_timer {} {
@@ -182,6 +180,10 @@ proc read_i8k_status {} {
     if {$status(lspeed) < 0} { set status(lspeed) $config(min_speed) }
     if {$status(rspeed) < 0} { set status(rspeed) $config(min_speed) }
 
+    if {$config(verbose) > 0} {
+        puts "temp, left, right, ac state: $status(temp) $status(lstate) $status(rstate) $status(ac)"
+    }
+
     return 1
 }
 
@@ -218,28 +220,31 @@ proc fan_control {} {
     set state $status(state)
     set temp  $status(temp)
 
+    set status(t_low)  [lindex $config($state) $index]
+    set status(t_high) [lindex $config($state) [expr $index+1]]
+
     while {$temp < 128 && $temp >= $status(t_high)} {
-	if {$config(verbose) > 0} {
-	    puts -nonewline "# ($temp>=$status(t_high)), "
-	}
-	incr state
-	set status(t_low)  [lindex $config($state) $index]
-	set status(t_high) [lindex $config($state) [expr $index+1]]
-	if {$config(verbose) > 0} {
-	    puts "state=$state, low=$status(t_low), high=$status(t_high)"
-	}
+	    if {$config(verbose) > 0} {
+	        puts -nonewline "# ($temp>=$status(t_high)), "
+	    }
+	    incr state
+	    set status(t_low)  [lindex $config($state) $index]
+	    set status(t_high) [lindex $config($state) [expr $index+1]]
+	    if {$config(verbose) > 0} {
+	        puts "state=$state, low=$status(t_low), high=$status(t_high)"
+	    }
     }
 
     while {$temp > 0 && $temp <= $status(t_low)} {
-	if {$config(verbose) > 0} {
-	    puts -nonewline "# ($temp<=$status(t_low)), "
-	}
-	incr state -1
-	set status(t_low)  [lindex $config($state) $index]
-	set status(t_high) [lindex $config($state) [expr $index+1]]
-	if {$config(verbose) > 0} {
-	    puts "state=$state, low=$status(t_low), high=$status(t_high)"
-	}
+	    if {$config(verbose) > 0} {
+	        puts -nonewline "# ($temp<=$status(t_low)), "
+	    }
+	    incr state -1
+	    set status(t_low)  [lindex $config($state) $index]
+	    set status(t_high) [lindex $config($state) [expr $index+1]]
+	    if {$config(verbose) > 0} {
+	        puts "state=$state, low=$status(t_low), high=$status(t_high)"
+	    }
     }
 
     set_fan $state

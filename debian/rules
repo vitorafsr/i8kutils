@@ -32,7 +32,7 @@ binary-indep: build
 	dh_compress -pi8kutils
 	dh_fixperms -pi8kutils
 	dh_installdeb -pi8kutils
-	#dh_shlibdeps -pi8kutils
+	dh_shlibdeps -pi8kutils
 	dh_gencontrol -pi8kutils
 	dh_md5sums -pi8kutils
 	dh_builddeb -pi8kutils
