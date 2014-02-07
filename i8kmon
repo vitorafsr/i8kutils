@@ -487,8 +487,8 @@ Options:
    -na|--noauto	            don\x27t control automatically the fans
     -d|--daemon             run in daemon mode without user interface
    -nd|--nodaemon           don\x27t run as daemon, open the user interface
-   -nc|--nouserconfig       don\x27t use \$HOME/.i8kmon
-    -v|--verbose            report status on stdout
+   -nc|--nouserconfig       don\x27t read \$HOME/.i8kmon
+    -v|--verbose            report log to stdout
     -g|--geometry <geom>    set applet geometry
     -t|--timeout <secs>     set poll timeout
     -u|--unit C|F           set temperature display unit

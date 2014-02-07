@@ -17,7 +17,10 @@ clean:
 	rm -f build-stamp
 	dh_clean
 
-binary-indep: build
+binary: binary-arch binary-indep
+binary-arch: binary-stamp
+binary-indep: binary-stamp
+binary-stamp: build
 	dh_testdir
 	dh_testroot
 	dh_install -pi8kutils
@@ -36,9 +39,5 @@ binary-indep: build
 	dh_gencontrol -pi8kutils
 	dh_md5sums -pi8kutils
 	dh_builddeb -pi8kutils
-
-binary-arch:
-
-binary: binary-indep binary-arch
 
 .PHONY: build clean binary-indep binary-arch binary
