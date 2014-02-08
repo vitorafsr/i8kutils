@@ -13,11 +13,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-CFLAGS = -Wall
+ccflags-y = -Wall
 
 all: i8kctl
 
 i8kctl: i8kctl.c
+
+i8k:
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
 clean:
 	rm -f i8kctl i8k.ko
