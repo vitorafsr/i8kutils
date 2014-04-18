@@ -8,7 +8,7 @@ Homepage: https://launchpad.net/i8kutils
 
 Package: i8kutils
 Architecture: i386 kfreebsd-i386 amd64 kfreebsd-amd64
-Depends: ${shlibs:Depends}, ${misc:Depends}, tcl, tk, acpi | acpitool, tclx
+Depends: ${shlibs:Depends}, ${misc:Depends}, tcl, tk, acpi | acpitool
 Description: Fan control for Dell laptops
  This is a collection of utilities to control Dell
  laptops fans. It includes programs to turn the fan on and off, to read fan

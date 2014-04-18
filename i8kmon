@@ -554,14 +554,6 @@ proc parse_options {} {
     }
 }
 
-proc trap_signals {} {
-    # This works only with the TclX extension library.
-    catch {
-	package require Tclx
-	signal -restart trap SIGHUP { read_config; status_timer }
-    }
-}
-
 proc probe_fan_speed {} {
     global status
 
@@ -609,7 +601,6 @@ proc main {} {
     read_config
     parse_options
     make_ui
-    trap_signals
     status_timer
 }
 
