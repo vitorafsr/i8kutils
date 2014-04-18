@@ -1,7 +1,7 @@
 .TH i8kmon 1 "17 June 2005" "Massimo Dal Zotto" Utilities
 .SH "NAME"
 .LP
-I8kmon \- Monitor the cpu temperature and fan status on Dell laptops
+i8kmon \- Monitor the cpu temperature and control the fans on Dell laptops
 .SH "SYNTAX"
 .LP
 i8kmon [\fI<options>\fP]
@@ -49,7 +49,6 @@ try to override the manual settings.
 .SH "OPTIONS"
 .LP
 The program accepts the following command\-line options:
-.LP
 .TP
 \fB\-a\fR, \fB\-\-auto\fR
 Monitor cpu temperature and fan status and control
@@ -88,16 +87,59 @@ This option affects only the value shown in the applet. All other
 temperature values are always in Celsius.
 .SH "CONFIGURATION"
 .LP
-The program has builtin defaults and temperature thresholds but users can
-specify their own settings in configuration files /etc/default/i8kmon and
-~/.i8kmon.
+The program has builtin defaults to temperature thresholds but users can
+specify their own settings in configuration files /etc/i8kmon.conf and
+~/.i8kmon. It is also possible to specify values to others internal variables
+that change the behavior of i8kmon.
+.LP
+The variables and values are as follows.
+.TP
+\fBset config(sysconfig)\fR   /etc/i8kmon.conf
+System configuration file
+.TP
+\fBset config(userconfig)\fR  ~/.i8kmon
+User configuration file
+.TP
+\fBset config(i8kfan)\fR  /usr/bin/i8kfan
+i8kfan executable path
+.TP
+\fBset config(acpi)\fR    "acpi"
+Filename of the apci executable
+.TP
+\fBset config(geometry)\fR    {}
+Geometry of applet
+.TP
+\fBset config(use_conf)\fR    1
+Set whether user configuration file must be read or not
+.TP
+\fBset config(auto)\fR    1
+Set i8kmon behavior to auto
+.TP
+\fBset config(daemon)\fR  1
+Load i8kmon as a daemon
+.TP
+\fBset config(verbose)\fR 0
+Print verbose logs
+.TP
+\fBset config(timeout)\fR 5
+Timeout
+.TP
+\fBset config(unit)\fR    C
+Unit of measure
+.TP
+\fBset config(t_high)\fR  80
+Maximum high temperature
+.TP
+\fBset config(min_speed)\fR   2000
+Minimum speed
+.LP
 The daemon defines 4 states with different fan speeds ({0 0}, {1 0}, {1 1},
 {2 2}) and for each state are defined the temperature thresholds which cause
 the switching to a higher or lower state. Furthermore each state can have
 different thresholds for operation on ac power or battery.
 For example the following configuration:
 .IP
-set config(0) {{0 0}  "\-"1  60  "\-"1  65}
+set config(0) {{0 0}  \-1  60  \-1  65}
 .br
 set config(1) {{1 0}  50  70  55  75}
 .br
@@ -106,27 +148,22 @@ set config(2) {{1 1}  60  80  65  85}
 set config(3) {{2 2}  70 128  75 128}
 .LP
 defines state 0 with both fans off, high threshold of 60 degrees (65 on
-battery) and low threshold "\-"1, which is actually never reached since 0 is the
+battery) and low threshold \-1, which is actually never reached since 0 is the
 lowest state. When the high threshold is reached the program switches to state
 1 (left low, right off) which has a high threshold of 70 degrees and a low
 threshold of 50 degrees. If the temperature drops below 50 the program will
 switch back to state 0, if it rises above 70 it will enter state 2, and so on.
 For better operation the temperature ranges should be overlapping with an
 hysteresis of at least 10 degrees, i.e. 1={50 70},2={60 80} is better than
-1={50 70},2={70 80}. It must be rembered that the low threshold of state 0
-must be "\-"1 and the high threshold of state 3 must be 128.
+1={50 70},2={70 80}. It must be remembered that the low threshold of state 0
+must be \-1 and the high threshold of state 3 must be 128.
 .LP
-If your laptop has only one fan you should specify a '-' instead of the fan
-speed of the missing fan, for example:
+If the laptop has only one fan, it is better to specify a '-' instead of the fan
+speed of the missing fan. For example:
 .IP
 set config(2) {{1 -}  60  80  65  85}
 .LP
-This program can be used by normal users as Gnome panel applet or started as
-daemon by an init script. Under Debian GNU/Linux it is possible to start the
-daemon automatically by creating an /etc/default/i8kmon configfile containing
-the line "set config(daemon) 1". Note the the /etc/default/i8kmon configfile
-is not installed by the i8kutils package because the program is designed
-to be run by normal users. If you want to use it as daemon you must create
+If you want to use it as a daemon you must create
 the config file yourself. In this case, the \fB\-\-nouserconfig\fR option
 can sometimes also help by limiting it to sourcing /etc/i8kmon.conf (and not
 ~/.i8kmon).
@@ -134,11 +171,13 @@ can sometimes also help by limiting it to sourcing /etc/i8kmon.conf (and not
 .LP
 \fI/proc/i8k\fP
 .br
-\fI/etc/default/i8kmon\fP
+\fI/etc/i8kmon.conf\fP
 .br
 \fI/$HOME/.i8kmon\fP
 .SH "AUTHORS"
 .LP
+Vitor Augusto <vitorafsr@gmail.com>
+.br
 Massimo Dal Zotto <dz@debian.org>
 .SH "COPYRIGHT"
 .LP
@@ -146,22 +185,6 @@ i8kmon and all the i8kutils programs , scripts and other files are
 distributed under the GNU General Public License (GPL).
 On Debian GNU/Linux systems, the complete text of the GNU General
 Public License can be found in `/usr/share/common-licenses/GPL'.
-.SH "BUGS"
-.LP
-On some Linux distributions i8kmon exits with an error like this:
-.IP
-can't find package Tk
-.br
-    while executing
-.br
-"package require Tk"
-.LP
-This is not a bug of i8kmon. It means that Tcl/Tk files are not installed
-correctly on your system and the Tk library can't be dynamically loaded
-from Tcl as it should be. In this case you can run i8kmon with the command:
-.IP
-wish /usr/bin/i8kmon -- [options...]
-.LP
 .SH "SEE ALSO"
 .LP
 i8kctl(1), i8kbuttons(1)
