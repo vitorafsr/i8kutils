@@ -1,6 +1,5 @@
 * #231824: i8kutils: Emulate 2.4 "multimedia keys" behaviour for 2.6
   - http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=231824
 * Add support for multiple temperature sensors and variable number of fans.
-* Remove i8kbuttons
-* Change timer to thread+sleep as it avoid creating many threads all over process life
+* Change i8kmon 'timer' to use a thread with sleep command in order to avoid creating many threads all over process life.
 

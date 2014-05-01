@@ -32,22 +32,20 @@ The package includes the following utilities:
 
     * i8kmon	 - temperature monitor with automatic or manual fan control
 
-    * i8kbuttons - monitors volume buttons and runs user-defined commands
-
 The i8kctl can be used to manually control the fan speed. The i8kmon program
 can continuously monitor the CPU temperature and control automatically the
 fans. The automatic fan control feature of i8kmon does essentially the same
-job of the BIOS. The difference is that i8kmon program works.
+job as the BIOS is suposed to do. The difference is that i8kmon program works.
 
 The latest version of the i8kutils package can be downloaded from:
 
     https://launchpad.net/i8kutils
 
-The i8k module is in the kernel, and a copy of the source code is here for
-customization.
+The i8k module is in the kernel, and a copy of the source code is here
+available.
 
-To load this, just do 'modprobe i8k 'in the terminal as root. And just to
-notify, i8kmon program loads the module at startup.
+To load the module, issue 'modprobe i8k' in the terminal as root. But the
+module is loaded by default when the i8kmon monitor is started as a service.
 
 The module is available since kernels 2.4 onwards.
 
@@ -155,32 +153,6 @@ The driver accepts the following parameters:
     power_status=1
 
 	report ac status in /proc/i8k. Default is 0.
-
-    handle_buttons=1
-
-	handle I8K volume buttons in the driver and generate keyboard events
-	when the buttons are pressed. If you enable this option you don't
-	need to run the i8kbuttons daemon. The driver generates the following
-	scancodes:
-
-	    key		kbd scancode	X keycode
-	    -------------------------------------
-	    VolMute	e0 20		160
-	    VolDown	e0 2e		174
-	    VolUp	e0 30		176
-
-	To handle these keycodes under X you must map them to X keysyms with
-	xmodmap, for example:
-
-	    ! I8K Volume buttons, available only with i8k handle_buttons=1
-	    keycode 160 = F27
-	    keycode 174 = F28
-	    keycode 176 = F29
-
-	You can then program sawfish or hotkeys to handle these keysyms.
-	This option is available only with kernel 2.4.
-
-	See also "THE I8000 MULTIMEDIA BUTTONS" for a detailed explanation.
 
     repeat_delay=<delay>
 
@@ -326,127 +298,6 @@ package because the program is designed to be run by normal users. If you
 want to use it as daemon you must create the config file yourself.
 
 
-THE I8KBUTTONS DAEMON
-=====================
-
-The i8kbuttons daemon monitors the status of the two volume buttons of the
-Inspiron or the corresponding Fn-keys. When a volume button press is
-detected the daemon runs a corresponding command specified in the command-
-line options. By specifying the proper commnds it is thus possible to control
-the volume of the sound mixer or run any other command, for example switch
-to vt1 if X freezes.
-
-On some models the volume buttons are not present and only the Fn-keys are
-available (Fn-PageUp = Volume Up, Fn-PageDn = Volume Down, Fn-End = Mute).
-
-It should be noted that although the program has default commands for the
-various buttons there isn't a standard command shipped with any Linux
-distributions which can be used to change the volume incrementally and to
-implement the Mute/Restore function. The default commands are just examples
-and must be overriden with your specific commands using the command-line
-options.
-
-DON'T SEND BUG REPORTS IF DEFAULT COMMANDS DON'T WORK FOR YOU, USE THE
-COMMAND-LINE OPTIONS AND SPECIFY YOUR OWN COMMANDS!
-
-This program can be used by normal users or started as daemon by an init
-script. Under Debian GNU/Linux it is possible to start automatically the
-daemon at boot by creating an /etc/default/i8kbuttons configfile and setting
-the I8KBUTTONS_UP_CMD, I8KBUTTONS_DOWN_CMD and I8KBUTTONS_MUTE_CMD variables
-with the command which must be executed by the program.
-
-Note the the /etc/default/i8kbuttons configfile is not installed by the
-i8kutils package because the program is usually run by normal users.
-If you want to use it as daemon you must create the config file yourself.
-
-
-THE I8000 MULTIMEDIA BUTTONS
-============================
-
-The Inspiron 8000 has also four "multimedia" buttons (Start, Stop, Rew and
-Fwd) which are not controlled by the SMM BIOS and are directly usable under X
-or the console. To map the buttons under console you should use the programs
-included in package console-tools. To use the mm buttons under X use the xev
-program to see the scancodes and map them to the appropriate keysyms.
-For example on my I8000 I have mapped:
-
-    keycode 129 = F31
-    keycode 130 = F32
-    keycode 131 = F33
-    keycode 132 = F34
-
-and I have configured sawfish to execute 'run-shell-command "xmms --play"'
-when F31 is pressed. If you have the sawfish-xmms package installed you can
-use instead the sawfish command 'xmms-play' which is faster. Similar commands
-are available for the Stop, Rew and Fwd functions.
-
-On a Debian (>=woody) system it is possible to set up a system-wide Xmodmap
-which is loaded automatically for all users when the X server is started.
-All you have to do is to create a file /etc/X11/Xsession.d/40custom_xmodmap
-like this:
-
-    # Load system-wide Xmodmap
-    if [ -x /usr/bin/X11/xmodmap ]; then
-      if [ -f $SYSMODMAP ]; then
-        xmodmap $SYSMODMAP
-      fi
-    fi
-
-    # Load user .Xmodmap
-    if [ -x /usr/bin/X11/xmodmap ]; then
-      if grep -qs ^allow-user-modmap $OPTIONFILE; then
-        if [ -f $USRMODMAP ]; then
-          xmodmap $USRMODMAP
-        fi
-      fi
-    fi
-
-and a system-wide /etc/X11/Xmodmap with the following lines:
-
-    ! Multimedia buttons on Inspiron 8000, used by sawfish to control xmms
-    keycode 129 = F31
-    keycode 130 = F32
-    keycode 131 = F33
-    keycode 132 = F34
-
-or let each user create his own ~/.Xmodmap like the above file if you prefer
-per-user customization. See the Xsession man page for more information.
-
-Another way to use the buttons without modifying the X keymap is to use the
-`hotkeys' package. In this case you have to add the following lines to its
-configuration file:
-
-    <?xml version="1.0"?>
-    <CONFIG model="Dell Inspiron 8100 Notebook">
-      <Play      keycode="129"/>
-      <Stop      keycode="130"/>
-      <PrevTrack keycode="131"/>
-      <NextTrack keycode="132"/>
-    </CONFIG>
-
-Personally I prefer to use sawfish-xmms because it seems faster and doesn't
-require an additional daemon, but if you are using a different window-manager
-you may want to try hotkeys.
-
-Note also that these button as well as the volume buttons can be programmed
-to run any program, not just to control the player and the audio volume.
-
-The following table defines the scancodes generated by keyboard and driver
-on the I8000. The corresponding console keycodes can be changed with the
-setkeycode command:
-
-	key		scancode	keycode
-	---------------------------------------
-	Play		e001		171
-	Stop		e002		172
-	Prev		e003		187
-	Next		e004		189
-	Play		e001		171
-	VolMute		e020		112
-	VolDown		e02e		114
-	VolUp		e030		115
-
-
 COMPILATION
 ===========
 
@@ -556,7 +407,7 @@ Contributors are listed here, in alphabetical order.
 
     Marcel J.E. Mol <marcel@mesa.nl>
 
-	patches for the --repeat option in the i8kbuttons util
+	patches for the --repeat option in the i8kbuttons (obsolete on Abr 30, 2014) util
 
     Gianni Tedesco <gianni@ecsc.co.uk>
 
@@ -564,14 +415,14 @@ Contributors are listed here, in alphabetical order.
 
     David Woodhouse <dwmw2@redhat.com>
 
-	suggestions on how to avoid the zombies in i8kbuttons
+	suggestions on how to avoid the zombies in i8kbuttons (obsolete on Abr 30, 2014)
+
+	Vitor Augusto <vitorafsr@gmail.com>
+
+	fixes for the freeze bug at i8kmon, general update and bug fixes
 
 and many others who tested the driver on their hardware and sent me reports
 and patches.
-
-Other Dell laptop utilities are available at the follwing URLs:
-
-    http://www.diefer.de/i8kfan/		(windows)
 
 No credits to DELL Computer who has always refused to give support on Linux
 or provide any useful information on the I8K buttons and their buggy BIOS.
