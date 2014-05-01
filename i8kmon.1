@@ -1,51 +1,44 @@
-.TH i8kmon 1 "17 June 2005" "Massimo Dal Zotto" Utilities
+.TH i8kmon 1 "30 Abr 2014" "Massimo Dal Zotto" Utilities
 .SH "NAME"
-.LP
-i8kmon \- Monitor the cpu temperature and control the fans on Dell laptops
-.SH "SYNTAX"
-.LP
+i8kmon \- a monitor for fan control on Dell laptops based on cpu temperature
+.SH "SYNOPSIS"
 i8kmon [\fI<options>\fP]
 .SH "DESCRIPTION"
+The i8kmon is a daemon to monitor the cpu temperature and control the
+fan status on Dell laptops. It does that by means of regularly reading the
+system temperature, and choosing apropriate state (speed) of the fan biased
+on a table.
 .LP
-The i8kmon daemon can be used to monitor the cpu temperature
-and fan status on Dell laptops.
-The program can be run in background as daemon or under X as
-an applet which can be swallowed in the gnome panel.
+Inside i8kmon there is a default table of thresholds with the values below
 .LP
-By default the program monitors the cpu temperature but doesn't
-do any automatic controls of the fan status accordingly to
-user\-defined temperature thresholds because this may not be
-needed if your laptop does already a good job with fans control.
-The automatic control can be enabled manually with the
-\fB\-\-auto\fR option.
+    set config(0) {{0 0}  -1  60  -1  65}
+    set config(1) {{1 0}  50  70  55  75}
+    set config(2) {{1 1}  60  80  65  85}
+    set config(3) {{2 2}  70 128  75 128}
 .LP
-The automatic fan control can also be turned on in the
-control popup menu which is invoked by clicking with
-the left mouse button on the temperature label.
-The control menu has three items: Auto, which controls the
-automatic fan control, Verbose, which prints status on stdout,
-and Suspend, which closes the /proc/i8kfan file and suspends
-the daemon to allow unloading the kernel module.
+This table can be customized at '/etc/i8kmon.conf', which will be read everytime
+i8kmon service starts.
 .LP
-The user interface reports the current cpu temperature in
-the top box and  in the two lower buttons the status of the
-fans. On systems wiht only one fan the interface shows only
-one fan button.
-If a button's background becomes red it means that the
-corresponding fan has a rotation speed lower than the
-minimum expected speed and is probably stuck.
-In this case proding it with a bent paper clip can often
-cause it to become unstuck.
+In fact, the monitor will run in background as a daemon if the option
+\fB\-\-daemon\fR is given. The i8kmon is just started in the background by default
+it is invoked as a service in Debian and derivated OSes.
 .LP
-The fan buttons can also be used to manually control the
-fan speeds.
-Clicking on a fan button with the left mouse button will
-cycle the selected fan between low speed, high speed and off.
-Clicking with the middle button will set the fan to high speed
-and clicking with the right button will switch the fan off.
-Note however that both the BIOS and the daemon have their
-own idea of what the fan speed should be and can sometimes
-try to override the manual settings.
+If no option is given, the program just monitors the cpu temperature.
+The automatic control can be enabled manually with the \fB\-\-auto\fR option.
+.LP
+i8kutils was not designed to discover the type of fan a Dell system has.
+.LP
+You can discover which fans exist using 'i8kfan'. Issue
+.LP
+    $ i8kfan 0 0
+.LP
+to turn the fans off. Then issue
+.LP
+    $ i8kfan 2 -
+.LP
+to try to turn on the left fan. If you hear some sound, then the left fan exist.
+Repeat the steps with '$ i8kfan 0 0; i8kfan - 2' to discover if the right fan
+exist.
 .SH "OPTIONS"
 .LP
 The program accepts the following command\-line options:
@@ -181,7 +174,7 @@ Vitor Augusto <vitorafsr@gmail.com>
 Massimo Dal Zotto <dz@debian.org>
 .SH "COPYRIGHT"
 .LP
-i8kmon and all the i8kutils programs , scripts and other files are
+i8kmon and all the i8kutils programs, scripts and other files are
 distributed under the GNU General Public License (GPL).
 On Debian GNU/Linux systems, the complete text of the GNU General
 Public License can be found in `/usr/share/common-licenses/GPL'.

@@ -1,3 +1,11 @@
+i8kutils (1.42) unstable; urgency=low
+
+  * Drop dependency on tclx.
+  * Fill i8kmon manpage with the set of variables available to /etc/i8kmon.conf.
+  * Update i8kmon manpage.
+
+ -- Vitor Augusto <vitorafsr@gmail.com>  Thu, 17 Apr 2014 22:38:59 -0300
+
 i8kutils (1.41) unstable; urgency=low
 
   * Probe 'acpi' and 'acpitool' before use.
