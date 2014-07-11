@@ -42,21 +42,22 @@ fi
 
 case "$1" in
     start)
-	    log_daemon_msg "Starting $DESC" "$NAME"
-        modprobe i8k >/dev/null 2>&1 || true
+	    log_success_msg "Starting $DESC" "$NAME"
+        modprobe i8k &>/dev/null
+		if [ $? != 0 ]; then
+			log_failure_msg "Module i8k did not load correctly. Try to load manually with parameter 'force=1'. See warnings on README from i8kutils package."
+			exit 1
+		fi
 	    if [ ! -f "$PROC_I8K" ]; then
-            log_progress_msg "Could not find $PROC_I8K."
-            log_end_msg 1
+            log_failure_msg "Could not find $PROC_I8K."
             exit 1
         fi
 	    start-stop-daemon --start --quiet --pidfile $PIDFILE \
     	    --background --make-pidfile --startas $DAEMON -- $I8KMON_ARGS
-        log_end_msg $?
     	;;
     stop)
-    	log_daemon_msg "Stopping $DESC" "$NAME"
+    	log_success_msg "Stopping $DESC" "$NAME"
     	start-stop-daemon --oknodo --stop --quiet --pidfile $PIDFILE
-        log_end_msg $?
     	rm -f $PIDFILE
 	    ;;
     status)

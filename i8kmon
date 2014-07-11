@@ -556,6 +556,11 @@ proc parse_options {} {
 
 proc probe_fan_speed {} {
     global status
+	global config
+
+	if {$status(leftspeed) != {} || $status(rightspeed) != {}} {
+		return
+	}
 
     i8kfan 1 1
     after 1000
@@ -577,6 +582,10 @@ proc probe_fan_speed {} {
 
     set status(leftspeed) "0 $lspeed1 $lspeed2 $lspeed3"
     set status(rightspeed) "0 $rspeed1 $rspeed2 $rspeed3"
+
+	if {$config(verbose) > 1} {
+		puts "Probed fan speeds are left=$status(leftspeed), right=status(rightspeed)"
+	}
 }
 
 # probe external tools
@@ -596,9 +605,9 @@ proc probe_tools {} {
 }
 
 proc main {} {
+    read_config
     probe_fan_speed
     probe_tools
-    read_config
     parse_options
     make_ui
     status_timer

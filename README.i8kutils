@@ -1,16 +1,15 @@
-I8KUTILS FOR LINUX - VERSION 1.36
+I8KUTILS FOR LINUX - VERSION 1.42
 =================================
 
 OVERVIEW
 ========
 
-This package contains user-space programs for accessing data from the SMM BIOS
-and the DMI table on Dell laptops. These data are used for power management,
-system hardware control, or proprietary OEM designed code. In Dell laptops, this
-is the location for the control of turning on and off fans.
+This package contains user-space programs for controling the fans on Dell
+laptops. It does that by means of data in the SMM BIOS and the DMI table.
 
-The utilities in the package makes use of the i8k kernel module, that reports
-the following information about the hardware:
+These data contains the states and the system temperature along
+with others infos. The fields returned in a query to the system are
+sumarized below.
 
     * BIOS version
 
@@ -26,28 +25,32 @@ the following information about the hardware:
 
     * volume buttons status (not the multimedia buttons)
 
-The package includes the following utilities:
+The data are collected by the i8k kernel module that are included in every modern
+kernel (precisely, since kernel 2.4). On start, i8kutils monitor automatically
+loads the module.
 
-    * i8kctl	 - command-line interface to the kernel driver
+The i8kutils package includes the following utilities:
+
+    * i8kctl	 - command-line interface to the kernel module
 
     * i8kmon	 - temperature monitor with automatic or manual fan control
+capability
 
-The i8kctl can be used to manually control the fan speed. The i8kmon program
-can continuously monitor the CPU temperature and control automatically the
-fans. The automatic fan control feature of i8kmon does essentially the same
+The i8kctl perform querys and sets related to fan control as
+read temperature, turn the fan on. The i8kmon continuously monitor the
+system temperature and control automatically the fans. The automatic
+fan control feature of i8kmon does essentially the same
 job as the BIOS is suposed to do. The difference is that i8kmon program works.
 
-The latest version of the i8kutils package can be downloaded from:
+The latest version of the i8kutils package can be retrieved at:
 
     https://launchpad.net/i8kutils
 
-The i8k module is in the kernel, and a copy of the source code is here
-available.
+A copy of the source code of i8k kernel module is available in i8kutils package.
 
-To load the module, issue 'modprobe i8k' in the terminal as root. But the
-module is loaded by default when the i8kmon monitor is started as a service.
-
-The module is available since kernels 2.4 onwards.
+To load the module, issue 'modprobe i8k' in the terminal as root, but normally
+this procedure is not necessary as the module is loaded by default when the
+i8kmon monitor starts as a service.
 
 
 LICENCE
