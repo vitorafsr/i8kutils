@@ -126,6 +126,17 @@ Maximum high temperature
 \fBset config(min_speed)\fR   2000
 Minimum speed
 .LP
+The following variables and values do not exist with default values, they are
+probed at every startup of i8kmon service. If these variables are set at config
+file, i8kmon will not probe for them. These variable avoid i8kmon turn on fans
+at max speed at every startup which, for some users, is a annoying behavior.
+.TP
+\fBset status(leftspeed)\fR   "0 1000 2000 3000"
+Speed values (rpm) of left fan at velocities 0, 1, 2, 3
+.TP
+\fBset status(rightspeed)\fR   "0 1000 2000 3000"
+Speed values (rpm) of right fan at velocities 0, 1, 2, 3
+.LP
 The daemon defines 4 states with different fan speeds ({0 0}, {1 0}, {1 1},
 {2 2}) and for each state are defined the temperature thresholds which cause
 the switching to a higher or lower state. Furthermore each state can have
