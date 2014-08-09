@@ -1,23 +1,22 @@
-.TH i8kctl 1 "18 March 2002" "Massimo Dal Zotto" Utilities
+.TH i8kctl 1 "09 August 2014" "Vitor Augusto" Utilities
 .SH "NAME"
 .LP
-I8kctl, i8kfan \- Utility to access SMM BIOS and DMI table information from Dell
-laptops
+i8kctl - Utility to define and retrieve information about the fans states and
+speeds in Dell laptops.
 .SH "SYNTAX"
 .LP
 i8kctl [\fI<command>\fP [\fI<args>\fP]]
-.br
-i8kfan [<\fIleft\fP> [<\fIright\fP>]]
 .SH "DESCRIPTION"
 .LP
-The i8kctl utility provides a command\-line interface to the i8k kernel
-module. When invoked without arguments the
-program reports the same information which can be read from the
-\fB/proc/i8k\fR file:
+The i8kctl utility provides a command\-line interface to query for one of the
+informations listed below. It does that by means of querying the system through
+the i8k kernel module. When invoked without arguments it reports all the
+information at once in one line of text that is the same of the file
+\fB/proc/i8k\fR.
 .IP
-1.  i8k format version
+1.  i8k output format version
 .br
-2.  bios version
+2.  Dell bios version
 .br
 3.  service tag (later 'machine id')
 .br
@@ -35,9 +34,11 @@ program reports the same information which can be read from the
 .br
 10. fn buttons status
 .LP
-The optional command argument can be used to select only one of the
-above items. Command can be: \fBversion\fR, \fBbios\fR, \fBid\fR,
-\fBtemp\fR, \fBfan\fR, \fBspeed\fR, \fBac\fR and \fBfn\fR. Examples:
+The following arguments can be used to select only one of the
+above items: \fBversion\fR, \fBbios\fR, \fBid\fR,
+\fBtemp\fR, \fBfan\fR, \fBspeed\fR, \fBac\fR and \fBfn\fR.
+.LP
+Some examples of usage and output are below.
 .IP
 $ i8kctl
 .br
@@ -51,8 +52,8 @@ $ i8kctl fan
 .br
 2 1
 .LP
-The \fBfan\fR command can accept two optional parameters which specify
-the new fan state for left and right fans. The state parameter can be:
+The \fBfan\fR command accept two optional parameters which specify
+the fan state for left and right fans. The state parameter can be:
 .IP
 0  turn the fan off
 .br
@@ -71,28 +72,22 @@ It should be noted that if the \fBi8kmon(1)\fR daemon is used to
 control the fans, setting the speed with i8kfan is pointless since the
 daemon override regularly the speed with its own value.
 .LP
-Invoking i8kctl as i8kfan is the same as invoking the program with
-the fan option:
-.IP
-$ i8kctl fan 1 2
-.br
-1 2
-.IP
-$ i8kfan 1 2
-.br
-1 2
+If \fBi8kctl fan\fR is invoked without the optional parameters, just the states
+of the fans are returned, and the output may contains a -1 with indicates the
+corresponding fan does not exist.
 .SH "FILES"
 .LP
 \fI/proc/i8k\fP
 .SH "AUTHORS"
 .LP
-Massimo Dal Zotto <dz@debian.org>
+2013-2014 Vitor Augusto <vitorafsr@gmail.com>
+.br
+2001-2009 Massimo Dal Zotto <dz@debian.org>
 .SH "COPYRIGHT"
 .LP
-i8kctl and all the i8kutils programs , scripts and other files are
-distributed under the GNU General Public License (GPL).
-On Debian GNU/Linux systems, the complete text of the GNU General
-Public License can be found in `/usr/share/common-licenses/GPL'.
+i8kctl is part of the i8kutils package. All files are distributed under the GNU
+General Public License (GPL). On Debian GNU/Linux systems, the complete text of
+the GNU General Public License can be found in `/usr/share/common-licenses/GPL'.
 .SH "SEE ALSO"
 .LP
 i8kmon(1)

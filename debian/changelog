@@ -1,9 +1,12 @@
 i8kutils (1.42) unstable; urgency=low
 
-  * Enable put fan speeds in config file, avoiding probe values at every startup of i8kmon service.
+  * Enable put fan speeds in config file, avoiding probe values at every
+  startup of i8kmon service.
   * Drop dependency on tclx.
-  * Fill i8kmon manpage with the set of variables available to '/etc/i8kmon.conf'.
+  * Fill i8kmon manpage with the set of variables available to
+  '/etc/i8kmon.conf'.
   * Update i8kmon manpage.
+  * Update i8kctl manpage.
   * Remove i8kbuttons.
   * Improve verboseness in init script.
   * Use more lsb compatible functions.
