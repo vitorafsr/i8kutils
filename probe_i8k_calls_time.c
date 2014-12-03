@@ -30,7 +30,7 @@ int main()
 		_exit(-1);
 	}
 
-	double ts[10];
+	double ts[16];
 
 	init();
 
@@ -53,6 +53,20 @@ int main()
 	ts[8] = timestamp();
 	i8k_get_fn_status();
 	ts[9] = timestamp();
+	i8k_set_fan(I8K_FAN_LEFT, I8K_FAN_OFF);
+	ts[10] = timestamp();
+	i8k_set_fan(I8K_FAN_LEFT, I8K_FAN_LOW);
+	ts[11] = timestamp();
+	i8k_set_fan(I8K_FAN_LEFT, I8K_FAN_HIGH);
+	ts[12] = timestamp();
+	i8k_set_fan(I8K_FAN_RIGHT, I8K_FAN_OFF);
+	ts[13] = timestamp();
+	i8k_set_fan(I8K_FAN_RIGHT, I8K_FAN_LOW);
+	ts[14] = timestamp();
+	i8k_set_fan(I8K_FAN_RIGHT, I8K_FAN_HIGH);
+	ts[15] = timestamp();
+
+
 
 	finish();
 
@@ -66,6 +80,13 @@ int main()
 	printf("i8k_get_fan_speed() = %lf\n", ts[7]-ts[6]);
 	printf("i8k_get_power_status() = %lf\n", ts[8]-ts[7]);
 	printf("i8k_get_fn_status() = %lf\n", ts[9]-ts[8]);
+	printf("i8k_set_fan() = %lf\n", ts[10]-ts[9]);
+	printf("i8k_set_fan() = %lf\n", ts[11]-ts[10]);
+	printf("i8k_set_fan() = %lf\n", ts[12]-ts[11]);
+	printf("i8k_set_fan() = %lf\n", ts[13]-ts[12]);
+	printf("i8k_set_fan() = %lf\n", ts[14]-ts[13]);
+	printf("i8k_set_fan() = %lf\n", ts[15]-ts[14]);
 
 	return 0;
 }
+

@@ -7,6 +7,7 @@ int i8k_get_fan_speed(int);
 int i8k_get_fan_speed(int);
 int i8k_get_power_status();
 int i8k_get_fn_status();
+int i8k_set_fan(int, int);
 
 #ifdef LIB
 void init();

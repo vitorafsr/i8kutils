@@ -1,6 +1,6 @@
 #!/usr/bin/env tclsh
 #
-# i8kmon -- Monitor the fan speed on Dell laptops.
+# i8kmon -- Monitor the temperature on Dell laptops.
 #
 # Copyright (C) 2013-2014  Vitor Augusto <vitorafsr@gmail.com>
 # Copyright (C) 2001-2005  Massimo Dal Zotto <dz@debian.org>
