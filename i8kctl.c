@@ -321,6 +321,21 @@ usage()
     printf("       i8kctl [-h]\n");
 }
 
+#ifdef LIB
+void init()
+{
+    i8k_fd = open(I8K_PROC, O_RDONLY);
+    if (i8k_fd < 0)
+    {
+        perror("can't open " I8K_PROC);
+        exit(-1);
+    }
+}
+void finish()
+{
+    close(i8k_fd);
+}
+#else
 int
 main(int argc, char **argv)
 {
@@ -339,44 +354,53 @@ main(int argc, char **argv)
 
     i8k_fd = open(I8K_PROC, O_RDONLY);
     if (i8k_fd < 0) {
-	perror("can't open " I8K_PROC);
-	exit(1);
+        perror("can't open " I8K_PROC);
+        exit(-1);
     }
 
-    /* No args, print the i8k status like /proc/i8k */
+    /* -2 as a magic number: if var 'ret' reachs the end of main() as -2, than
+     * no command was executed, and the user input was an invalid command
+     */
+    int ret = -2;
+
+    /* No args, print status: same output as 'cat /proc/i8k' */
     if (argc < 2) {
-	return status();
+        ret = status();
+        close(i8k_fd);
+        return ret;
     }
 
     if (strcmp(argv[1],"fan")==0) {
-	argc--; argv++;
-	return fan(argc,argv);
+        argc--; argv++;
+        ret = fan(argc,argv);
     }
     if (strcmp(argv[1],"version")==0) {
-	printf("%s\n", I8K_PROC_FMT);
-	return 0;
+        printf("%s\n", I8K_PROC_FMT);
     }
     if (strcmp(argv[1],"speed")==0) {
-	return fan_speed(argc,argv);
+        ret = fan_speed(argc,argv);
     }
     if (strcmp(argv[1],"bios")==0) {
-	return bios_version();
+        ret = bios_version();
     }
     if (strcmp(argv[1],"id")==0) {
-	return machine_id();
+        ret = machine_id();
     }
     if (strcmp(argv[1],"temp")==0) {
-	return cpu_temperature();
+        ret = cpu_temperature();
     }
     if (strcmp(argv[1],"ac")==0) {
-	return ac_status();
+        ret = ac_status();
     }
     if (strcmp(argv[1],"fn")==0) {
-	return fn_key();
+        ret = fn_key();
     }
 
-    fprintf(stderr,"invalid command: %s\n", argv[1]);
-    return 1;
-}
+    close(i8k_fd);
 
-/* end of file */
+    if (ret == -2) // no command executed
+        fprintf(stderr,"invalid arg: %s\n", argv[1]);
+
+    return 0;
+}
+#endif

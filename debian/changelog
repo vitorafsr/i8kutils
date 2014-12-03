@@ -38,7 +38,7 @@ i8kutils (1.40) unstable; urgency=medium
 
 i8kutils (1.39) unstable; urgency=low
 
-  * Fix frezee in some systems. LP: #1179282.
+  * Fix freeze in some systems. LP: #1179282.
   * Fix bug where i8kfan needs a 'fan' argument. LP: #1104842.
     - i8kfan does not need this argument anymore.
   * Update 'apm -> acpi' in i8kmon.

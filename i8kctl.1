@@ -1,18 +1,17 @@
-.TH i8kctl 1 "09 August 2014" "Vitor Augusto" Utilities
+.TH i8kctl 1 2014-08-09 "Vitor Augusto"
 .SH "NAME"
 .LP
-i8kctl - Utility to define and retrieve information about the fans states and
-speeds in Dell laptops.
-.SH "SYNTAX"
-.LP
-i8kctl [\fI<command>\fP [\fI<args>\fP]]
+i8kctl \- Utility to define and retrieve information about the fans states and
+speeds on Dell laptops.
+.SH "SYNOPSIS"
+\fBi8kctl\fP [\fI<param>\fP [\fI<args>\fP]]
 .SH "DESCRIPTION"
 .LP
-The i8kctl utility provides a command\-line interface to query for one of the
+The i8kctl utility provides a command\-line interface to retrieve one of the
 informations listed below. It does that by means of querying the system through
 the i8k kernel module. When invoked without arguments it reports all the
-information at once in one line of text that is the same of the file
-\fB/proc/i8k\fR.
+information at once in one line of text. These informations are the same
+contained in the file \fB/proc/i8k\fR.
 .IP
 1.  i8k output format version
 .br
@@ -34,8 +33,8 @@ information at once in one line of text that is the same of the file
 .br
 10. fn buttons status
 .LP
-The following arguments can be used to select only one of the
-above items: \fBversion\fR, \fBbios\fR, \fBid\fR,
+The following parameters are used to select one of the
+items above: \fBversion\fR, \fBbios\fR, \fBid\fR,
 \fBtemp\fR, \fBfan\fR, \fBspeed\fR, \fBac\fR and \fBfn\fR.
 .LP
 Some examples of usage and output are below.
@@ -52,8 +51,8 @@ $ i8kctl fan
 .br
 2 1
 .LP
-The \fBfan\fR command accept two optional parameters which specify
-the fan state for left and right fans. The state parameter can be:
+The \fBfan\fR parameter accepts two optional arguments for the fans
+states. The state arguments can be:
 .IP
 0  turn the fan off
 .br
@@ -63,17 +62,17 @@ the fan state for left and right fans. The state parameter can be:
 .br
 \-  don't change the state of this fan
 .LP
-For example the command:
+And the following is an example of usage:
 .IP
 $ i8kctl fan \- 2
 .LP
-sets the right fan to high speed and leaves the left unchanged.
+This sets the right fan to high speed and leaves the left unchanged.
 It should be noted that if the \fBi8kmon(1)\fR daemon is used to
-control the fans, setting the speed with i8kfan is pointless since the
+control the fans, setting the speed with \fBi8kctl fan\fP is pointless since the
 daemon override regularly the speed with its own value.
 .LP
-If \fBi8kctl fan\fR is invoked without the optional parameters, just the states
-of the fans are returned, and the output may contains a -1 with indicates the
+If \fBi8kctl fan\fR is invoked without the optional arguments, the states
+of the fans are returned, and the output may contains a -1 which indicates that the
 corresponding fan does not exist.
 .SH "FILES"
 .LP

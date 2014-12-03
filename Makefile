@@ -15,9 +15,15 @@
 
 ccflags-y = -Wall
 
-all: i8kctl
+all: i8kctl probe_i8k_calls_time
 
-i8kctl: i8kctl.c
+i8kctl: i8kctl.c i8kctl.o
+	gcc -Wall i8kctl.c -o i8kctl
+
+probe_i8k_calls_time: probe_i8k_calls_time.c
+	gcc -Wall -c -g -DLIB i8kctl.c
+	gcc -Wall -c -g -DLIB probe_i8k_calls_time.c
+	gcc -o probe_i8k_calls_time i8kctl.o probe_i8k_calls_time.o
 
 i8k:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
