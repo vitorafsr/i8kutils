@@ -38,8 +38,6 @@ array set config {
 }
 
 array set status {
-    left	{}
-    right	{}
     leftspeed	{}
     rightspeed	{}
     timer	{}
@@ -220,6 +218,8 @@ proc fan_control {} {
     set state $status(state)
     set temp  $status(temp)
 
+	set actual_state $state # store state because it maybe will change below
+
     set status(t_low)  [lindex $config($state) $index]
     set status(t_high) [lindex $config($state) [expr $index+1]]
 
@@ -247,66 +247,40 @@ proc fan_control {} {
 	    }
     }
 
-    set_fan $state
+	if {$state != $actual_state} {
+        set_fan $state
+	}
 }
 
-proc set_fan {{state {}}} {
+proc set_fan {state} {
     global config
     global status
 
-    if {$state != {}} {
 	set status(state) $state
-    }
-    set args [lindex $config($status(state)) 0]
+    set args [lindex $config($state) 0]
 
-    # Default to user settings
-    set left  $status(left)
-    set right $status(right)
+    set left [lindex $args 0]
+    set right [lindex $args 1]
 
-    if {$left == {} && $status(lstate) != [lindex $args 0]} {
-	set left [lindex $args 0]
-    }
-    if {$left != {} && $left < [lindex $args 0]} {
-	set left [lindex $args 0]
-    }
-    if {$left == $status(lstate)} {
-	set left {}
+    if {$status(lstate) == -1 || $left == $status(lstate)} {
+        set left "-"
+    } else {
+        set status(lstate) $left
     }
 
-    if {$right == {} && $status(rstate) != [lindex $args 1]} {
-	set right [lindex $args 1]
+    if {$status(rstate) == -1 || $right == $status(rstate)} {
+        set right "-"
+    } else {
+        set status(rstate) $right
     }
-    if {$right != {} && $right < [lindex $args 1]} {
-	set right [lindex $args 1]
-    }
-    if {$right == $status(rstate)} {
-	set right {}
-    }
-    if {$status(nfans) < 2} { set right {} }
 
-    if {$left != {} || $right != {}} {
-	i8kfan $left $right
-    }
-}
+    if {$status(nfans) < 2} { set right "-" }
 
-# Run the external i8kfan command and update fan state
-proc i8kfan {args} {
-    global config
-    global status
-
-    if {$args == {- -}} return
-
-    set cmd [linsert $args 0 exec $config(i8kfan)]
     if {$config(verbose) > 0} {
-	puts "# $cmd"
+        puts "$config(i8kfan) $left $right"
     }
 
-    set result [eval $cmd]
-    set status(lstate) [lindex $result 0]
-    set status(rstate) [lindex $result 1]
-
-    if {$status(lstate) < 0} { set status(lstate) 0 }
-    if {$status(rstate) < 0} { set status(rstate) 0 }
+    exec $config(i8kfan) $left $right
 }
 
 proc make_ui {} {
@@ -465,9 +439,9 @@ proc toggle_fan {fan {speed {}}} {
 	set status($fan) [expr ($status($fan)+1) % 3]
     }
     if {$fan == "left"} {
-	i8kfan $status($fan) {}
+	   exec $config(i8kfan) $status($fan) "-"
     } else {
-	i8kfan {} $status($fan)
+	   exec $config(i8kfan) "-" $status($fan)
     }
     if {$status($fan) == 0} {
 	set status($fan) {}
@@ -562,19 +536,19 @@ proc probe_fan_speed {} {
 		return
 	}
 
-    i8kfan 1 1
+    exec $config(i8kfan) 1 1
     after 1000
     set speeds [eval exec "i8kctl speed"]
     set lspeed1 [lindex $speeds 0]
     set rspeed1 [lindex $speeds 1]
 
-    i8kfan 2 2
+    exec $config(i8kfan) 2 2
     after 1000
     set speeds [eval exec "i8kctl speed"]
     set lspeed2 [lindex $speeds 0]
     set rspeed2 [lindex $speeds 1]
 
-    i8kfan 3 3
+    exec $config(i8kfan) 3 3
     after 1000
     set speeds [eval exec "i8kctl speed"]
     set lspeed3 [lindex $speeds 0]
@@ -617,4 +591,3 @@ if {$tcl_interactive == 0} {
     main
     vwait forever
 }
-
