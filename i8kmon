@@ -218,7 +218,8 @@ proc fan_control {} {
     set state $status(state)
     set temp  $status(temp)
 
-	set actual_state $state # store state because it maybe will change below
+	# store state because it maybe will change below
+	set actual_state $state
 
     set status(t_low)  [lindex $config($state) $index]
     set status(t_high) [lindex $config($state) [expr $index+1]]
