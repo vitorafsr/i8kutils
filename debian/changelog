@@ -11,8 +11,9 @@ i8kutils (1.42) unstable; urgency=low
   * Improve verboseness in init script.
   * Use more lsb compatible functions.
   * Update 'README', 'debian/control' files infos.
+  * Fix constant freeze in some systems. LP: #1349176.
 
- -- Vitor Augusto <vitorafsr@gmail.com>  Thu, 17 Apr 2014 22:38:59 -0300
+ -- Vitor Augusto <vitorafsr@gmail.com>  Mon, 08 Dec 2014 04:11:23 -0200
 
 i8kutils (1.41) unstable; urgency=low
 
