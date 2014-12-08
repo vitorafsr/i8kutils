@@ -2,7 +2,7 @@
 #
 # i8kui -- User interface for i8kutils
 #
-# Copyright (C) 2014  Vitor Augusto <vitorafsr@gmail.com>
+# Copyright (C) 2014 Vitor Augusto <vitorafsr@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -91,7 +91,7 @@ proc make_ui {} {
     if {$config(geometry) != {}} {
         set geometry $config(geometry)
     } else {
-        set geometry 24x24
+        set geometry 48x48
     }
     if {[lindex [split $geometry x] 1] >= 36} {
         set font fixed

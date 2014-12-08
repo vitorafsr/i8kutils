@@ -24,7 +24,6 @@ array set config {
     acpi    "acpi"
     geometry	{}
     use_conf    1
-    auto	1
     verbose	0
     timeout	5
     unit	C
@@ -124,9 +123,7 @@ proc check_status {} {
 	return
     }
 
-    if {$config(auto) == 1} {
 	fan_control
-    }
 }
 
 proc read_i8k_status {} {
@@ -276,8 +273,6 @@ proc usage {} {
 
 Options:
 
-    -a|--auto               control automatically the fans
-   -na|--noauto	            don\x27t control automatically the fans
    -nc|--nouserconfig       don\x27t read \$HOME/.i8kmon
     -v|--verbose            report log to stdout
     -t|--timeout <secs>     set poll timeout
@@ -298,12 +293,6 @@ proc parse_options {} {
 	    -\? - -h - -help - --help {
 		usage
 		exit
-	    }
-	    --auto - -a {
-		set config(auto) 1
-	    }
-	    --noauto - -na - -n {
-		set config(auto) 0
 	    }
         --nouserconfig - -nc {
         set config(use_conf) 0

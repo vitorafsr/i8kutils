@@ -1,13 +1,13 @@
-.TH i8kmon 1 "30 Abr 2014" "Massimo Dal Zotto" Utilities
+.TH i8kmon 1 "08 Dec 2014" "Vitor Augusto" Utilities
 .SH "NAME"
-i8kmon \- a monitor for fan control on Dell laptops based on cpu temperature
+i8kmon \- a monitor of temperature on Dell laptops
 .SH "SYNOPSIS"
 i8kmon [\fI<options>\fP]
 .SH "DESCRIPTION"
-The i8kmon is a daemon to monitor the cpu temperature and control the
-fan status on Dell laptops. It does that by means of regularly reading the
-system temperature, and choosing apropriate state (speed) of the fan biased
-on a table.
+The i8kmon is a daemon that monitors the cpu temperature, and control the
+fan speed on Dell laptops. It does that by means of regularly reading the
+system temperature, and choosing apropriate speed of the fan biased
+on a table of thresholds.
 .LP
 Inside i8kmon there is a default table of thresholds with the values below
 .LP
@@ -19,55 +19,29 @@ Inside i8kmon there is a default table of thresholds with the values below
 This table can be customized at '/etc/i8kmon.conf', which will be read everytime
 i8kmon service starts.
 .LP
-In fact, the monitor will run in background as a daemon if the option
-\fB\-\-daemon\fR is given. The i8kmon is just started in the background by default
-it is invoked as a service in Debian and derivated OSes.
+On Debian and derivated OSes, i8kmon starts in the background by default as a service.
 .LP
-If no option is given, the program just monitors the cpu temperature.
-The automatic control can be enabled manually with the \fB\-\-auto\fR option.
-.LP
-i8kutils was not designed to discover the type of fan a Dell system has.
-.LP
-You can discover which fans exist using 'i8kfan'. Issue
+i8kutils was not designed to discover the type of fans a Dell system has. But you
+can discover which fans exist using 'i8kfan', issuing
 .LP
     $ i8kfan 0 0
 .LP
-to turn the fans off. Then issue
+to turn the fans off. And then issuing
 .LP
     $ i8kfan 2 -
 .LP
-to try to turn on the left fan. If you hear some sound, then the left fan exist.
-Repeat the steps with '$ i8kfan 0 0; i8kfan - 2' to discover if the right fan
-exist.
+to try to turn on the left fan. If some sound is audible, then the left fan exist.
+Repeating the steps with '$ i8kfan 0 0; i8kfan - 2' it is possible to discover
+if the right fan exist.
 .SH "OPTIONS"
 .LP
 The program accepts the following command\-line options:
-.TP
-\fB\-a\fR, \fB\-\-auto\fR
-Monitor cpu temperature and fan status and control
-automatically the fans.
-.TP
-\fB\-na\fR, \fB\-\-noauto\fR
-Monitor cpu temperature and fan status but don't control
-automatically the fans. This is the default setting.
-.TP
-\fB\-d\fR, \fB\-\-daemon\fR
-Run the program in daemon mode, i.e. without the user
-interface.
-.TP
-\fB\-nd\fR, \fB\-\-nodaemon\fR
-Don't run the program in daemon mode, i.e. open the user
-interface. This is the default setting.
 .TP
 \fB\-nc\fR, \fB\-\-nouserconfig\fR
 Don't attempt to source the ~/.i8kmon configfile, only /etc/i8kmon.conf.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Report hardware status and program actions on stdout.
-.TP
-\fB\-g\fR, \fB\-\-geometry\fR <\fIgeometry\fP>
-Specifies the geometry of the applet window. Geometry should
-be 24x24, 36x36 or 48x48 to fit the size of the gnome panel.
 .TP
 \fB\-t\fR, \fB\-\-timeout\fR <\fIseconds\fP>
 Specifies the interval at which the daemon checks the
@@ -99,17 +73,8 @@ i8kfan executable path
 \fBset config(acpi)\fR    "acpi"
 Filename of the apci executable
 .TP
-\fBset config(geometry)\fR    {}
-Geometry of applet
-.TP
 \fBset config(use_conf)\fR    1
 Set whether user configuration file must be read or not
-.TP
-\fBset config(auto)\fR    1
-Set i8kmon behavior to auto
-.TP
-\fBset config(daemon)\fR  1
-Load i8kmon as a daemon
 .TP
 \fBset config(verbose)\fR 0
 Print verbose logs
@@ -126,10 +91,10 @@ Maximum high temperature
 \fBset config(min_speed)\fR   2000
 Minimum speed
 .LP
-The following variables and values do not exist with default values, they are
-probed at every startup of i8kmon service. If these variables are set at config
-file, i8kmon will not probe for them. These variable avoid i8kmon turn on fans
-at max speed at every startup which, for some users, is a annoying behavior.
+The following variables and values below do not exist with default values, they are
+acquired at every startup of i8kmon service. If these variables are set at config
+file, i8kmon will not probe for them. For some users, these variables avoid
+i8kmon turns on fans at max speed at every startup which is a annoying behavior.
 .TP
 \fBset status(leftspeed)\fR   "0 1000 2000 3000"
 Speed values (rpm) of left fan at velocities 0, 1, 2, 3
@@ -166,11 +131,6 @@ If the laptop has only one fan, it is better to specify a '-' instead of the fan
 speed of the missing fan. For example:
 .IP
 set config(2) {{1 -}  60  80  65  85}
-.LP
-If you want to use it as a daemon you must create
-the config file yourself. In this case, the \fB\-\-nouserconfig\fR option
-can sometimes also help by limiting it to sourcing /etc/i8kmon.conf (and not
-~/.i8kmon).
 .SH "FILES"
 .LP
 \fI/proc/i8k\fP
