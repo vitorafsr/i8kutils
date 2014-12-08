@@ -22,6 +22,8 @@ array set config {
     userconfig	~/.i8kmon
     i8kfan	/usr/bin/i8kfan
     acpi    "acpi"
+    font1  "fixed"
+    font2  "6x10"
     geometry	{}
     use_conf    1
     auto	1
@@ -312,12 +314,12 @@ proc make_ui {} {
     if {$config(geometry) != {}} {
 	set geometry $config(geometry)
     } else {
-	set geometry 24x24
+	set geometry 48x48
     }
     if {[lindex [split $geometry x] 1] >= 36} {
-	set font fixed
+        set font $config(font1)
     } else {
-	set font 6x10
+        set font $config(font2)
     }
     wm geometry .i8kmon $geometry
 
@@ -467,6 +469,7 @@ Options:
     -g|--geometry <geom>    set applet geometry
     -t|--timeout <secs>     set poll timeout
     -u|--unit C|F           set temperature display unit
+    -f|--font <font>        set font for applet
 
 "
 }
@@ -511,6 +514,11 @@ proc parse_options {} {
 	    --unit - -u {
 		set config(unit) [lindex $argv [incr i]]
 	    }
+        --font - -f {
+        # set all fonts to user input font
+        set config(font1) [lindex $argv [incr i]]
+        set config(font2) $config(font1)
+        }
 	    -- {
 		continue
 	    }
