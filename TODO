@@ -2,4 +2,4 @@
   - http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=231824
 * Add support for multiple temperature sensors and variable number of fans.
 * Change i8kmon 'timer' to use a thread with sleep command in order to avoid creating many threads all over process life.
-
+* Update docs to say that i8kmon is always in daemon mode, and that does not exist --daemon -d options anymore.

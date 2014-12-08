@@ -117,8 +117,8 @@ proc make_ui {} {
 
     # Set $status(lstate) and $status(rstate)
     set x [eval exec i8kfan]
-    set status(lstate) [lindex x 0]
-    set status(rstate) [lindex x 1]
+    set status(lstate) [lindex $x 0]
+    set status(rstate) [lindex $x 1]
     if {$status(lstate) < 0} {
         place forget .i8kui.lfan
         place .i8kui.rfan -relx 0 -rely 0.5 -relwidth 1 -relheight 0.5
@@ -130,14 +130,12 @@ proc make_ui {} {
 
     set status(bg)       [.i8kui.lfan cget -bg]
     set status(activebg) [.i8kui.lfan cget -activebackground]
-    set status(ui)   1
 
     set menu .i8kui.menu
     menu $menu -tearoff 0
-    $menu add check -label "Auto"    -variable config(auto)
     $menu add check -label "Verbose" -variable config(verbose)
     $menu add separator
-    $menu add command -label "Reload" -command { read_config; status_timer }
+    $menu add command -label "Reload" -command { read_config; update_ui }
     $menu add command -label "Exit"   -command { exit }
 
     bind .i8kui.temp <Button-1> "tk_popup $menu %X %Y"
@@ -173,8 +171,8 @@ proc update_ui {} {
 
     # Left button    
     set x [eval exec i8kfan]
-    set status(lstate) [lindex x 0]
-    set status(rstate) [lindex x 1]
+    set status(lstate) [lindex $x 0]
+    set status(rstate) [lindex $x 1]
     if {$status(lstate) == 0} {
         .i8kui.lfan config -text {} -bg $bg -activebackground $ab
     } elseif {$status(lstate) >= 2} {
@@ -194,6 +192,30 @@ proc update_ui {} {
     }
 
     update
+}
+
+proc toggle_fan {fan {speed {}}} {
+    global status
+
+    set status($fan) 0
+    if {$speed != {}} {
+        set status($fan) $speed
+    } else {
+        if {$fan == "left"} {
+            set status($fan) $status(lstate)
+        } else {
+            set status($fan) $status(rstate)
+        }
+        set status($fan) [expr ($status($fan)+1) % 3]
+    }
+
+    set status($fan) [expr ($status($fan)+1) % 3]
+
+    if {$fan == "left"} {
+          exec i8kfan $status($fan) "-"
+    } else {
+          exec i8kfan "-" $status($fan)
+    }
 }
 
 if {$tcl_interactive == 0} {
