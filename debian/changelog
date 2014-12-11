@@ -12,8 +12,8 @@ i8kutils (1.42) unstable; urgency=low
   * Use more lsb compatible functions.
   * Update 'README', 'debian/control' files infos.
   * Fix constant freeze in some systems. LP: #1349176.
-  * Closes: #681578.
-  * Closes: #766620.
+  * Correct system config filename over documentation. Closes: #681578.
+  * Enable user set font for applet. Closes: #766620.
 
  -- Vitor Augusto <vitorafsr@gmail.com>  Mon, 08 Dec 2014 04:11:23 -0200
 

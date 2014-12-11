@@ -47,8 +47,8 @@ array set status {
     acpi_timer	0
     state	0
     temp	0
-    lstate	0
-    rstate	0
+    lstate	-2
+    rstate	-2
     lspeed	0
     rspeed	0
     lstuck	0
@@ -593,6 +593,7 @@ proc main {} {
     probe_tools
     parse_options
     make_ui
+    set_fan 0
     status_timer
 }
 

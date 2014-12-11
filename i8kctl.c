@@ -376,25 +376,25 @@ main(int argc, char **argv)
         argc--; argv++;
         ret = fan(argc,argv);
     }
-    if (strcmp(argv[1],"version")==0) {
+    else if (strcmp(argv[1],"version")==0) {
         printf("%s\n", I8K_PROC_FMT);
     }
-    if (strcmp(argv[1],"speed")==0) {
+    else if (strcmp(argv[1],"speed")==0) {
         ret = fan_speed(argc,argv);
     }
-    if (strcmp(argv[1],"bios")==0) {
+    else if (strcmp(argv[1],"bios")==0) {
         ret = bios_version();
     }
-    if (strcmp(argv[1],"id")==0) {
+    else if (strcmp(argv[1],"id")==0) {
         ret = machine_id();
     }
-    if (strcmp(argv[1],"temp")==0) {
+    else if (strcmp(argv[1],"temp")==0) {
         ret = cpu_temperature();
     }
-    if (strcmp(argv[1],"ac")==0) {
+    else if (strcmp(argv[1],"ac")==0) {
         ret = ac_status();
     }
-    if (strcmp(argv[1],"fn")==0) {
+    else if (strcmp(argv[1],"fn")==0) {
         ret = fn_key();
     }
 
