@@ -29,6 +29,6 @@ i8k:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
 clean:
-	rm -f i8kctl i8k.ko
+	rm -f i8kctl i8k.ko probe_i8k_calls_time *.o
 
 obj-m += i8k.o

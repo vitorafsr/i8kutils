@@ -3,7 +3,7 @@ Section: utils
 Priority: optional
 Maintainer: Vitor Augusto <vitorafsr@gmail.com>
 Build-Depends: debhelper (>= 8)
-Standards-Version: 3.9.5
+Standards-Version: 3.9.6
 Homepage: https://launchpad.net/i8kutils
 
 Package: i8kutils
