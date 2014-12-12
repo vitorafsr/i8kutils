@@ -4,9 +4,8 @@ export CFLAGS := $(shell dpkg-buildflags --get CFLAGS)
 export CPPFLAGS := $(shell dpkg-buildflags --get CPPFLAGS)
 export LDFLAGS := $(shell dpkg-buildflags --get LDFLAGS)
 
-build: build-arch
-build-arch: build-stamp
-build-stamp:
+build: build-arch build-indep
+build-arch:
 	dh_testdir
 	$(MAKE) CFLAGS="$(CFLAGS) $(CPPFLAGS) $(LDFLAGS)"
 	touch $@
@@ -16,9 +15,8 @@ clean:
 	rm -f build-stamp
 	dh_clean
 
-binary: binary-arch
-binary-arch: binary-stamp
-binary-stamp: build
+binary: binary-arch binary-indep
+binary-arch: build
 	dh_testdir
 	dh_testroot
 	dh_install -pi8kutils
@@ -37,5 +35,9 @@ binary-stamp: build
 	dh_gencontrol -pi8kutils
 	dh_md5sums -pi8kutils
 	dh_builddeb -pi8kutils
+
+build-indep: ;
+
+binary-indep: ;
 
 .PHONY: build clean binary-arch binary
