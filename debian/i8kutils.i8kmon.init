@@ -30,8 +30,8 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 NAME=i8kmon
 DAEMON=/usr/bin/i8kmon
 PROC_I8K=/proc/i8k
-DESC="Dell fan/cpu-temperature monitor"
-I8KMON_ARGS="--daemon --nouserconfig --auto"
+DESC="Fan control for Dell laptops"
+I8KMON_ARGS="--nouserconfig"
 PIDFILE=/var/run/$NAME.pid
 
 test -x $DAEMON || exit 5

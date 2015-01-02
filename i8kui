@@ -1,0 +1,226 @@
+#!/usr/bin/env tclsh
+#
+# i8kui -- User interface for i8kutils
+#
+# Copyright (C) 2014 Vitor Augusto <vitorafsr@gmail.com>
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+
+array set config {
+    sysconfig   /etc/i8kmon.conf
+    userconfig  ~/.i8kmon
+    use_conf    1
+    geometry    {}    
+    timeout 5
+    t_high  80
+    unit    C
+    verbose 0
+}
+
+array set status {    
+    lstate  0
+    rstate  0
+    bg  white
+    activebg    white
+    nfans   1
+}
+
+proc read_config {} {
+    global config
+    global status
+
+    # read system config file
+    if {[file exists $config(sysconfig)]} {
+        source $config(sysconfig)
+        if {$config(verbose) > 0} {
+            puts "reading system config file"
+        }
+    }
+
+    # read user config file
+    # as it is read last, the options here have precedence
+    if {$config(use_conf) != 0} {
+        if {[file exists $config(userconfig)]} {
+            source $config(userconfig)
+            if {$config(verbose) > 0} {
+                puts "reading user config file"
+            }
+        }
+    }
+}
+
+proc status_timer {} {
+    global config
+
+    # Reschedule status timer
+    after [expr $config(timeout)*1000] {status_timer}
+
+    update_ui
+}
+
+
+proc make_ui {} {
+    global status
+    global config
+    global tcl_version
+
+    if {[info command .i8kui] != {}} {
+        # Applet aready existing
+        return
+    }
+
+    # Load Tk library (require a Tk version >=8.4)
+    package require Tk 8.4
+    wm withdraw .
+    update
+
+    toplevel .i8kui -class I8kui -relief sunken -bd 1
+    wm title .i8kui i8kmon
+    wm command .i8kui i8kmon
+    wm protocol .i8kui WM_DELETE_WINDOW { exit }
+
+    if {$config(geometry) != {}} {
+        set geometry $config(geometry)
+    } else {
+        set geometry 48x48
+    }
+    if {[lindex [split $geometry x] 1] >= 36} {
+        set font fixed
+    } else {
+        set font 6x10
+    }
+    wm geometry .i8kui $geometry
+
+    label .i8kui.temp -bd 0 -padx 0 -pady 0 -text "0" -font $font \
+        -highlightthickness 0 -width 3
+    button .i8kui.lfan -bd 1 -padx 0 -pady 0 -text {} -font $font \
+        -highlightthickness 0 -command {toggle_fan left}
+    button .i8kui.rfan -bd 1 -padx 0 -pady 0 -text {} -font $font \
+        -highlightthickness 0 -command {toggle_fan right}
+    bind .i8kui.lfan <Button-2> {toggle_fan left 2}
+    bind .i8kui.lfan <Button-3> {toggle_fan left 0}
+    bind .i8kui.rfan <Button-2> {toggle_fan right 2}
+    bind .i8kui.rfan <Button-3> {toggle_fan right 0}
+
+    place .i8kui.temp -relx 0.0 -rely 0.0 -relwidth 1.0 -relheight 0.5
+    place .i8kui.lfan -relx 0.0 -rely 0.5 -relwidth 0.5 -relheight 0.5
+    place .i8kui.rfan -relx 0.5 -rely 0.5 -relwidth 0.5 -relheight 0.5
+
+    # Set $status(lstate) and $status(rstate)
+    set x [eval exec i8kfan]
+    set status(lstate) [lindex $x 0]
+    set status(rstate) [lindex $x 1]
+    if {$status(lstate) < 0} {
+        place forget .i8kui.lfan
+        place .i8kui.rfan -relx 0 -rely 0.5 -relwidth 1 -relheight 0.5
+    }
+    if {$status(rstate) < 0} {
+        place forget .i8kui.rfan
+        place .i8kui.lfan -relx 0 -rely 0.5 -relwidth 1 -relheight 0.5
+    }
+
+    set status(bg)       [.i8kui.lfan cget -bg]
+    set status(activebg) [.i8kui.lfan cget -activebackground]
+
+    set menu .i8kui.menu
+    menu $menu -tearoff 0
+    $menu add check -label "Verbose" -variable config(verbose)
+    $menu add separator
+    $menu add command -label "Reload" -command { read_config; update_ui }
+    $menu add command -label "Exit"   -command { exit }
+
+    bind .i8kui.temp <Button-1> "tk_popup $menu %X %Y"
+
+    update
+}
+
+proc update_ui {} {
+    global config
+    global status
+
+    # If applet window is unexpectedly destroyed exit the program
+    if {![winfo exists .i8kui]} {
+        puts stderr "applet window destroyed, exit"
+        exit 1
+    }
+
+    set bg $status(bg)
+    set ab $status(activebg)
+
+    # Temperature
+    set temp [eval exec "i8kctl temp"]
+    if {$temp >= $config(t_high)} {
+        set fg red
+    } else {
+        set fg black
+    }
+    if {$config(unit) == "F" } {
+        .i8kui.temp config -text [expr (0+$temp)*9/5+32] -fg $fg
+    } else {
+        .i8kui.temp config -text $temp -fg $fg
+    }
+
+    # Left button    
+    set x [eval exec i8kfan]
+    set status(lstate) [lindex $x 0]
+    set status(rstate) [lindex $x 1]
+    if {$status(lstate) == 0} {
+        .i8kui.lfan config -text {} -bg $bg -activebackground $ab
+    } elseif {$status(lstate) >= 2} {
+        .i8kui.lfan config -text $status(lstate) -bg red -activebackground red
+    } else {
+        .i8kui.lfan config -text $status(lstate) -bg $bg -activebackground $ab
+    }
+
+    # Right button
+    if {$status(nfans) < 2} { return }
+    if {$status(rstate) == 0} {
+        .i8kui.rfan config -text {} -bg $bg -activebackground $ab
+    } elseif {$status(rstate) >= 2} {
+        .i8kui.rfan config -text $status(rstate) -bg red -activebackground red
+    } else {
+        .i8kui.rfan config -text $status(rstate) -bg $bg -activebackground $ab
+    }
+
+    update
+}
+
+proc toggle_fan {fan {speed {}}} {
+    global status
+
+    set status($fan) 0
+    if {$speed != {}} {
+        set status($fan) $speed
+    } else {
+        if {$fan == "left"} {
+            set status($fan) $status(lstate)
+        } else {
+            set status($fan) $status(rstate)
+        }
+        set status($fan) [expr ($status($fan)+1) % 3]
+    }
+
+    set status($fan) [expr ($status($fan)+1) % 3]
+
+    if {$fan == "left"} {
+          exec i8kfan $status($fan) "-"
+    } else {
+          exec i8kfan "-" $status($fan)
+    }
+}
+
+if {$tcl_interactive == 0} {
+    read_config
+    make_ui
+    status_timer
+    vwait forever
+}

@@ -25,7 +25,7 @@ probe_i8k_calls_time: probe_i8k_calls_time.c
 	gcc -Wall -c -g -DLIB probe_i8k_calls_time.c
 	gcc -o probe_i8k_calls_time i8kctl.o probe_i8k_calls_time.o
 
-i8k:
+module:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
 clean:

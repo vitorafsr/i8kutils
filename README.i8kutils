@@ -33,14 +33,19 @@ The i8kutils package includes the following utilities:
 
     * i8kctl	 - command-line interface to the kernel module
 
-    * i8kmon	 - temperature monitor with automatic or manual fan control
-capability
+    * i8kmon   - temperature monitor with fan control capability
+
+    * i8kfan   - utility to set state (speed) of fans
+
+    * i8kui    - user interface of i8kutils
 
 The i8kctl perform querys and sets related to fan control as
 read temperature, turn the fan on. The i8kmon continuously monitor the
-system temperature and control automatically the fans. The automatic
-fan control feature of i8kmon does essentially the same
-job as the BIOS is suposed to do. The difference is that i8kmon program works.
+system temperature and control automatically the fans.
+
+All Dell laptop has the feature of controlling the temperature in the BIOS, but
+to some models this feature does not work properly. i8kmon does essentially the same
+job as the BIOS is suposed to do.
 
 The latest version of the i8kutils package can be retrieved at:
 
@@ -235,12 +240,12 @@ THE I8KMON APPLET/DAEMON
 
 The i8kmon program can be used to monitor the CPU temperature and control
 automatically the fans accordingly to user-defined temperature thresholds.
-The program can be run as daemon or as an applet which can be embedded in
-the Gnome panel (No, I don't use KDE). The program requires Tcl/Tk (>= 8.0).
+The program requires Tcl/Tk (>= 8.4).
 
 The program has builtin defaults and temperature thresholds but users can
 specify their own settings in configuration files /etc/default/i8kmon
 and ~/.i8kmon.
+
 The daemon defines 4 states with different fan speeds ({0 0}, {1 0}, {1 1},
 {2 2}) and for each state are defined the temperature thresholds which cause
 the switching to a higher or lower state. Furthermore each state can have
@@ -263,42 +268,10 @@ hysteresis of at least 10 degree, i.e. 1={50 70},2={60 80} is better than
 1={50 70},2={70 80}. It must be rembered that the low threshold of state 0
 must be -1 and the high threshold of state 3 must be 128.
 
-If your laptop has only one fan you should specify a '-' instead of the fan
+If a laptop has only one fan the config should specify a '-' instead of the fan
 speed of the missing fan, for example:
 
     set config(2) {{1 -}  60  80  65  85}
-
-NOTE: it has been reported that on some Linux distributions i8kmon exits
-with an error like this:
-
-    can't find package Tk
-        while executing
-    "package require Tk"
-
-This is not a bug in i8kmon. It means that Tcl/Tk files are not installed
-correctly on your system and the Tk library can't be dynamically loaded
-from Tcl. In this case you can run i8kmon with the command:
-
-    wish /usr/bin/i8kmon -- [options...]
-
-You should also report the bug to the maintainer of the Tcl/Tk packages
-included in your Linux distribution. A quick fix for the problem could
-also be adding the following line to /usr/lib/tk8.3/pkgIndex.tcl:
-
-    package ifneeded Tk 8.3 [list load "/usr/lib/libtk8.3.so.1" Tk]
-
-This works on Debian and maybe on other Linux distributions. Note also that
-in order to use the gui you must have the same versions of tcl/tk installed,
-i.e. it won't work with tcl8.4 and tk8.3.
-
-This program can be used by normal users as Gnome panel applet or started
-as daemon by an init script. Under Debian GNU/Linux it is possible to start
-the daemon automatically by creating an /etc/default/i8kmon configfile
-containing the line "set config(daemon) 1".
-
-Note the the /etc/default/i8kmon configfile is not installed by the i8kutils
-package because the program is designed to be run by normal users. If you
-want to use it as daemon you must create the config file yourself.
 
 
 COMPILATION
@@ -307,20 +280,11 @@ COMPILATION
 To compile the programs type "make". To install "make install", as root.
 
 To compile the kernel module, if it is not already included in the kernel,
-type "make module". By default the module compiles without symbol versions
-and can thus be loaded on any 2.4.x kernel with "insmod -f i8k.o".
-If you want a versioned module uncomment the MODVERSIONS line in Makefile
-or make the module with "make modversion". You can load and unload the module
-with "make insmod" and "make rmmod".
+type "make module". The module can be loaded on any 2.4.x kernel with
+"insmod -f i8k.o".
 
-If you are using kernel 2.4.14 or later you can have the module compiled
-automatically with the kernel by enabling the following option in the kernel
-configuration:
-
-    CONFIG_I8K=m
-
-You can also include the i8k code directly in the kernel but I don't recommend
-it because it makes debugging more difficult.
+If you are using kernel 2.4.14 or later you probably already have the module
+compiled in your system.
 
 
 DELL INSPIRON 8000 BIOS BUGS
@@ -418,13 +382,13 @@ Contributors are listed here, in alphabetical order.
 
     David Woodhouse <dwmw2@redhat.com>
 
-	suggestions on how to avoid the zombies in i8kbuttons (obsolete on Abr 30, 2014)
+  suggestions on how to avoid the zombies in i8kbuttons (obsolete on Abr 30, 2014)
 
-	Vitor Augusto <vitorafsr@gmail.com>
+    Vitor Augusto <vitorafsr@gmail.com>
 
-	fixes for the freeze bug at i8kmon, general update and bug fixes
+  fixes for the freeze bug at i8kmon, general update and bug fixes
 
-and many others who tested the driver on their hardware and sent me reports
+and many others who tested the driver on their hardware and sent reports
 and patches.
 
 No credits to DELL Computer who has always refused to give support on Linux

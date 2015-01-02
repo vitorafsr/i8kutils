@@ -15,7 +15,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-set PROG_VERSION "v1.31 12/05/2014"
+set PROG_VERSION "v1.32 12/08/2014"
 
 array set config {
     sysconfig	/etc/i8kmon.conf
@@ -26,8 +26,6 @@ array set config {
     font2  "6x10"
     geometry	{}
     use_conf    1
-    auto	1
-    daemon	1
     verbose	0
     timeout	5
     unit	C
@@ -56,7 +54,6 @@ array set status {
     ac		0
     t_low	0
     t_high	0
-    ui		0
 }
 
 proc read_config {} {
@@ -128,13 +125,7 @@ proc check_status {} {
 	return
     }
 
-    if {$config(auto) == 1} {
 	fan_control
-    }
-
-    if {$status(ui) == 1} {
-	update_ui
-    }
 }
 
 proc read_i8k_status {} {
@@ -165,16 +156,6 @@ proc read_i8k_status {} {
     if {$ac < 0} {
 	read_ac_status
     }
-
-    # Done in make_ui.
-    # If second fan status is not available assume we have only a fan
-    #if {$status(nfans) >= 2 && $status(lstate) >= 0 && $status(rstate) < 0} {
-    #	set status(nfans) 1
-    #	catch {
-    #	    place forget .i8kmon.rfan
-    #	    place .i8kmon.lfan -relx 0.0 -rely 0.5 -relwidth 1.0 -relheight 0.5
-    #	}
-    #}
 
     # If fan speed is not available (on I4000) assume fans are running
     if {$status(lspeed) < 0} { set status(lspeed) $config(min_speed) }
@@ -286,172 +267,6 @@ proc set_fan {state} {
     exec $config(i8kfan) $left $right
 }
 
-proc make_ui {} {
-    global status
-    global config
-    global tcl_version
-
-    if {$config(daemon) == 1} {
-	# Daemon mode, no user interface
-	return
-    }
-    if {[info command .i8kmon] != {}} {
-	# Applet aready existing
-	return
-    }
-
-    # Load Tk library (require a Tk version >=8.4)
-    package require Tk 8.4
-    wm title . {}
-    wm withdraw .
-    update
-
-    toplevel .i8kmon -class I8kmon -relief sunken -bd 1
-    wm title .i8kmon i8kmon
-    wm command .i8kmon i8kmon
-    wm protocol .i8kmon WM_DELETE_WINDOW { exit }
-
-    if {$config(geometry) != {}} {
-	set geometry $config(geometry)
-    } else {
-	set geometry 48x48
-    }
-    if {[lindex [split $geometry x] 1] >= 36} {
-        set font $config(font1)
-    } else {
-        set font $config(font2)
-    }
-    wm geometry .i8kmon $geometry
-
-    label .i8kmon.temp -bd 0 -padx 0 -pady 0 -text "0" -font $font \
-	    -highlightthickness 0 -width 3
-    button .i8kmon.lfan -bd 1 -padx 0 -pady 0 -text {} -font $font \
-	    -highlightthickness 0 -command {toggle_fan left}
-    button .i8kmon.rfan -bd 1 -padx 0 -pady 0 -text {} -font $font \
-	    -highlightthickness 0 -command {toggle_fan right}
-    bind .i8kmon.lfan <Button-2> {toggle_fan left 2}
-    bind .i8kmon.lfan <Button-3> {toggle_fan left 0}
-    bind .i8kmon.rfan <Button-2> {toggle_fan right 2}
-    bind .i8kmon.rfan <Button-3> {toggle_fan right 0}
-
-    place .i8kmon.temp -relx 0.0 -rely 0.0 -relwidth 1.0 -relheight 0.5
-    place .i8kmon.lfan -relx 0.0 -rely 0.5 -relwidth 0.5 -relheight 0.5
-    place .i8kmon.rfan -relx 0.5 -rely 0.5 -relwidth 0.5 -relheight 0.5
-
-    # Set $status(lstate) and $status(rstate)
-    read_i8k_status
-    if {$status(lstate) < 0} {
-	place forget .i8kmon.lfan
-	place .i8kmon.rfan -relx 0 -rely 0.5 -relwidth 1 -relheight 0.5
-    }
-    if {$status(rstate) < 0} {
-	place forget .i8kmon.rfan
-	place .i8kmon.lfan -relx 0 -rely 0.5 -relwidth 1 -relheight 0.5
-    }
-
-    set status(bg)       [.i8kmon.lfan cget -bg]
-    set status(activebg) [.i8kmon.lfan cget -activebackground]
-    set status(ui)	 1
-
-    make_menu .i8kmon
-
-    update
-}
-
-proc make_menu {w} {
-    global config
-    global status
-
-    set menu $w.menu
-    menu $menu -tearoff 0
-    $menu add check -label "Auto"    -variable config(auto)
-    $menu add check -label "Verbose" -variable config(verbose)
-    $menu add separator
-    $menu add command -label "Reload" -command { read_config; status_timer }
-    $menu add command -label "Exit"   -command { exit }
-
-    bind .i8kmon.temp <Button-1> "tk_popup $menu %X %Y"
-}
-
-proc update_ui {} {
-    global config
-    global status
-
-    # If applet window is unexpectedly destroyed exit the program
-    if {![winfo exists .i8kmon]} {
-	puts stderr "applet window destroyed, exit"
-	exit 1
-    }
-
-    set bg $status(bg)
-    set ab $status(activebg)
-
-    # Temperature
-    if {$status(temp) >= $config(t_high)} {
-	set fg red
-    } else {
-	set fg black
-    }
-    if {$config(unit) == "F" } {
-	.i8kmon.temp config -text [expr (0+$status(temp))*9/5+32] -fg $fg
-    } else {
-	.i8kmon.temp config -text $status(temp) -fg $fg
-    }
-
-    # Left button
-    if {$status(lstate) != 0 && $status(lspeed) < $config(min_speed)} {
-	incr status(lstuck)
-    } else {
-	set status(lstuck) 0
-    }
-    if {$status(lstate) == 0} {
-	.i8kmon.lfan config -text {} -bg $bg -activebackground $ab
-    } elseif {$status(lstuck) >= 2} {
-	.i8kmon.lfan config -text $status(lstate) -bg red -activebackground red
-    } else {
-	.i8kmon.lfan config -text $status(lstate) -bg $bg -activebackground $ab
-    }
-
-    # Right button
-    if {$status(nfans) < 2} { return }
-    if {$status(rstate) != 0 && $status(rspeed) < $config(min_speed)} {
-	incr status(rstuck)
-    } else {
-	set status(rstuck) 0
-    }
-    if {$status(rstate) == 0} {
-	.i8kmon.rfan config -text {} -bg $bg -activebackground $ab
-    } elseif {$status(rstuck) >= 2} {
-	.i8kmon.rfan config -text $status(rstate) -bg red -activebackground red
-    } else {
-	.i8kmon.rfan config -text $status(rstate) -bg $bg -activebackground $ab
-    }
-}
-
-proc toggle_fan {fan {speed {}}} {
-    global status
-
-    if {$speed != {}} {
-	set status($fan) $speed
-    } else {
-	if {$fan == "left"} {
-	    set status($fan) $status(lstate)
-	} else {
-	    set status($fan) $status(rstate)
-	}
-	set status($fan) [expr ($status($fan)+1) % 3]
-    }
-    if {$fan == "left"} {
-	   exec $config(i8kfan) $status($fan) "-"
-    } else {
-	   exec $config(i8kfan) "-" $status($fan)
-    }
-    if {$status($fan) == 0} {
-	set status($fan) {}
-    }
-    update_ui
-}
-
 proc usage {} {
     global argv0
 
@@ -460,13 +275,8 @@ proc usage {} {
 
 Options:
 
-    -a|--auto               control automatically the fans
-   -na|--noauto	            don\x27t control automatically the fans
-    -d|--daemon             run in daemon mode without user interface
-   -nd|--nodaemon           don\x27t run as daemon, open the user interface
    -nc|--nouserconfig       don\x27t read \$HOME/.i8kmon
     -v|--verbose            report log to stdout
-    -g|--geometry <geom>    set applet geometry
     -t|--timeout <secs>     set poll timeout
     -u|--unit C|F           set temperature display unit
     -f|--font <font>        set font for applet
@@ -487,26 +297,11 @@ proc parse_options {} {
 		usage
 		exit
 	    }
-	    --daemon - -d {
-		set config(daemon) 1
-	    }
-	    --nodaemon - -nd {
-		set config(daemon) 0
-	    }
-	    --auto - -a {
-		set config(auto) 1
-	    }
-	    --noauto - -na - -n {
-		set config(auto) 0
-	    }
         --nouserconfig - -nc {
         set config(use_conf) 0
         }
 	    --verbose - -v {
 		set config(verbose) 1
-	    }
-	    --geometry - -g {
-		set config(geometry) [lindex $argv [incr i]]
 	    }
 	    --timeout - -t {
 		set config(timeout) [lindex $argv [incr i]]
@@ -592,8 +387,6 @@ proc main {} {
     probe_fan_speed
     probe_tools
     parse_options
-    make_ui
-    set_fan 0
     status_timer
 }
 
@@ -601,3 +394,4 @@ if {$tcl_interactive == 0} {
     main
     vwait forever
 }
+
