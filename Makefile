@@ -15,7 +15,7 @@
 
 ccflags-y = -Wall
 
-pkgver := "$(shell dpkg-parsechangelog --show-field Version)"
+pkgver := "1.43" #$(shell dpkg-parsechangelog --show-field Version)"
 CXXFLAGS = -DPROG_VERSION=${pkgver}
 arch := "$(shell uname -m)"
 
