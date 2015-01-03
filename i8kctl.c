@@ -28,8 +28,6 @@
 
 #include "i8k.h"
 
-#define PROG_VERSION "v1.6 05/30/2013"
-
 static int i8k_fd;
 
 char *

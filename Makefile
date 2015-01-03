@@ -15,20 +15,28 @@
 
 ccflags-y = -Wall
 
-all: i8kctl probe_i8k_calls_time
+pkgver := "$(shell dpkg-parsechangelog --show-field Version)"
+CXXFLAGS = -DPROG_VERSION=${pkgver}
+arch := "$(shell uname -m)"
 
-i8kctl: i8kctl.c i8kctl.o
-	gcc -Wall i8kctl.c -o i8kctl
+all: i8kctl smm
 
-probe_i8k_calls_time: probe_i8k_calls_time.c
-	gcc -Wall -c -g -DLIB i8kctl.c
+i8kctl: i8kctl.c
+	gcc -Wall -c -g -DPROG_VERSION='${pkgver}' i8kctl.c
+	gcc i8kctl.o -o i8kctl
+
+probe_i8k_calls_time: probe_i8k_calls_time.c i8kctl.c
+	gcc -Wall -c -g -DLIB -DPROG_VERSION='${pkgver}' i8kctl.c
 	gcc -Wall -c -g -DLIB probe_i8k_calls_time.c
-	gcc -o probe_i8k_calls_time i8kctl.o probe_i8k_calls_time.o
+	gcc -o probe_i8k_calls_time i8kctl.o probe_i8k_calls_time.o -lrt
 
 module:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
+smm: smm.c
+	gcc -Wall -Werror -D${arch} smm.c -o smm
+
 clean:
-	rm -f i8kctl i8k.ko probe_i8k_calls_time *.o
+	rm -f i8kctl i8k.ko probe_i8k_calls_time smm *.o
 
 obj-m += i8k.o
