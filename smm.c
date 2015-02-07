@@ -118,10 +118,10 @@ main(int argc, char **argv)
 	exit(1);
 	}
 
-	printf("smm utility is a way to directly set values to the registers\n");
-	printf("of the processor with then the processor entering System Management Mode.\n");
-	printf("As of that, and considering that the behavior depends on the\n");
-	printf("firmware installed, the result may be unexpected.\n");
+	printf("smm utility is a way to directly set values to the processor registers\n");
+	printf("with after that the processor entering System Management Mode.\n");
+	printf("As of that, and considering that the behavior of execution\n");
+	printf("depends on the firmware installed, the result may be unexpected.\n");
 	printf("Use this utility with extremely caution.\n\n");
 
 	printf("Type 'yes' to continue:\n");

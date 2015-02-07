@@ -2,7 +2,7 @@
 #
 # i8kmon -- Monitor the temperature on Dell laptops.
 #
-# Copyright (C) 2013-2014  Vitor Augusto <vitorafsr@gmail.com>
+# Copyright (C) 2013-2015  Vitor Augusto <vitorafsr@gmail.com>
 # Copyright (C) 2001-2005  Massimo Dal Zotto <dz@debian.org>
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -40,7 +40,6 @@ array set config {
 array set status {
     leftspeed	{}
     rightspeed	{}
-    timer	{}
     nfans	2
     acpi_timer	0
     state	0
@@ -111,8 +110,7 @@ proc status_timer {} {
     global status
 
     # Reschedule status timer
-    catch {after cancel $status(timer)}
-    set status(timer) [after [expr $config(timeout)*1000] {status_timer}]
+    after [expr $config(timeout)*1000] {status_timer}
 
     check_status
 }
@@ -325,7 +323,7 @@ proc parse_options {} {
     }
 
     if {$config(verbose) > 0} {
-	set copyright "Copyright (C) 2013-2014 Vitor Augusto <vitorafsr@gmail.com>"
+	set copyright "Copyright (C) 2013-2015 Vitor Augusto <vitorafsr@gmail.com>"
 	puts "i8kmon $PROG_VERSION - $copyright"
 	parray config
 	parray status

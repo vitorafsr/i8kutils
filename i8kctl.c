@@ -2,7 +2,7 @@
  * i8kctl.c -- Utility to query the i8k kernel module on Dell laptops to
  * retrieve information
  *
- * Copyright (C) 2013-2014 Vitor Augusto <vitorafsr@gmail.com>
+ * Copyright (C) 2013-2015 Vitor Augusto <vitorafsr@gmail.com>
  * Copyright (C) 2001  Massimo Dal Zotto <dz@debian.org>
  *
  * This program is free software; you can redistribute it and/or modify it
