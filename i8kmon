@@ -30,7 +30,6 @@ array set config {
     timeout	5
     unit	C
     t_high	80
-    min_speed	2000
     0		{{0 0}  -1  60  -1  65}
     1		{{1 0}  50  70  55  75}
     2		{{1 1}  60  80  65  85}
@@ -136,8 +135,10 @@ proc read_i8k_status {} {
     set status(lstate) [lindex $state 0]
     set status(rstate) [lindex $state 1]
 
-    # Set fan speed based on probed values. In some systems, query for fan speed
-    # is a slow call that freezes OS
+    # retrieve probeb fans speeds stored on variables and set the correct speed values
+	# using stored values improve performance as it does not requires reading
+	# values all the time from the system, and also from the fact that reading
+	# fan speeds is a slow call that freezes the computer in some Dell laptops models.
     if {$status(lstate) != -1} {
 	set status(lspeed) [lindex $status(leftspeed) $status(lstate)]
     } else {
@@ -155,12 +156,8 @@ proc read_i8k_status {} {
 	read_ac_status
     }
 
-    # If fan speed is not available (on I4000) assume fans are running
-    if {$status(lspeed) < 0} { set status(lspeed) $config(min_speed) }
-    if {$status(rspeed) < 0} { set status(rspeed) $config(min_speed) }
-
     if {$config(verbose) > 0} {
-        puts "temp, left, right, ac state: $status(temp) $status(lstate) $status(rstate) $status(ac)"
+        puts "temp, left fan state, right fan state, ac state: $status(temp) $status(lstate) $status(rstate) $status(ac)"
     }
 
     return 1
