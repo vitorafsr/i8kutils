@@ -22,13 +22,13 @@ arch := "$(shell uname -m)"
 all: i8kctl smm
 
 i8kctl: i8kctl.c
-	gcc -Wall -c -g -DPROG_VERSION='${pkgver}' i8kctl.c
-	gcc i8kctl.o -o i8kctl
+	$(CC) -Wall -c -g -DPROG_VERSION='${pkgver}' i8kctl.c
+	$(CC) i8kctl.o -o i8kctl
 
 probe_i8k_calls_time: probe_i8k_calls_time.c i8kctl.c
-	gcc -Wall -c -g -DLIB -DPROG_VERSION='${pkgver}' i8kctl.c
-	gcc -Wall -c -g -DLIB probe_i8k_calls_time.c
-	gcc -o probe_i8k_calls_time i8kctl.o probe_i8k_calls_time.o -lrt
+	$(CC) -Wall ${CFLAGS} -c -DLIB -DPROG_VERSION='${pkgver}' i8kctl.c -o i8kctl-lib.o
+	$(CC) -Wall ${CFLAGS} -c probe_i8k_calls_time.c
+	$(CC) -Wall ${CFLAGS} ${LDFLAGS} -o probe_i8k_calls_time i8kctl-lib.o probe_i8k_calls_time.o -lrt
 
 module:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
