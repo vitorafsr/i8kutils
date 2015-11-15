@@ -13,7 +13,7 @@ double t;
 
 struct timespec tmst;
 
-inline double timestamp()
+double timestamp()
 {
 	clock_gettime(CLOCK_REALTIME, &tmst);
 	t = tmst.tv_nsec;
