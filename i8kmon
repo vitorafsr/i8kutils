@@ -378,10 +378,13 @@ proc probe_tools {} {
 }
 
 proc main {} {
+    global status
+
     read_config
     probe_fan_speed
     probe_tools
     parse_options
+    set_fan $status(state)
     status_timer
 }
 
