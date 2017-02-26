@@ -4,8 +4,8 @@ I8KUTILS FOR LINUX - VERSION 1.42
 OVERVIEW
 ========
 
-This package contains user-space programs for controling the fans on Dell
-laptops. It does that by means of data in the SMM BIOS and the DMI table.
+i8kutils package contains user-space programs for controling the fans on some Dell
+laptops.
 
 These data contains the states and the system temperature along
 with others infos. The fields returned in a query to the system are
@@ -243,7 +243,7 @@ automatically the fans accordingly to user-defined temperature thresholds.
 The program requires Tcl/Tk (>= 8.4).
 
 The program has builtin defaults and temperature thresholds but users can
-specify their own settings in configuration files /etc/default/i8kmon
+specify their own settings in configuration files /etc/i8kmon.conf
 and ~/.i8kmon.
 
 The daemon defines 4 states with different fan speeds ({0 0}, {1 0}, {1 1},
