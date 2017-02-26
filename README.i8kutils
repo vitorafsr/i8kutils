@@ -1,15 +1,19 @@
-I8KUTILS FOR LINUX - VERSION 1.42
-=================================
+I8KUTILS
+========
 
 OVERVIEW
 ========
 
-i8kutils package contains user-space programs for controling the fans on some Dell
+i8kutils package contains user-space programs for controlling the fans on some Dell
 laptops.
+
+Note: i8kutils is entirely built upon the i8k kernel module. And this driver was develop
+many years ago with NO support from Dell. If it stops working nowadays, the developer
+has no way to correct it.
 
 These data contains the states and the system temperature along
 with others infos. The fields returned in a query to the system are
-sumarized below.
+summarized below.
 
     * BIOS version
 
@@ -39,13 +43,13 @@ The i8kutils package includes the following utilities:
 
     * i8kui    - user interface of i8kutils
 
-The i8kctl perform querys and sets related to fan control as
+The i8kctl perform queries and sets related to fan control as
 read temperature, turn the fan on. The i8kmon continuously monitor the
 system temperature and control automatically the fans.
 
 All Dell laptop has the feature of controlling the temperature in the BIOS, but
 to some models this feature does not work properly. i8kmon does essentially the same
-job as the BIOS is suposed to do.
+job as the BIOS is supposed to do.
 
 The latest version of the i8kutils package can be retrieved at:
 
@@ -176,7 +180,7 @@ The driver accepts the following parameters:
 You can specify the module parameters when loading the module or as kernel
 option when booting the kernel if the driver is compiled statically.
 
-To have the module loaded atomatically at boot you must manually add the
+To have the module loaded automatically at boot you must manually add the
 line "i8k" into the file /etc/modules or use the modconf utility, if
 available in your distribution, and select the i8k module. For example:
 
@@ -202,7 +206,7 @@ with the options specified in the user interface.
 TROUBLESHOOTING
 ===============
 
-If you have problems loading the kernel module or have succesfully tested
+If you have problems loading the kernel module or have successfully tested
 it on different hardware please let me know your results. Include
 the following information:
 
@@ -227,7 +231,7 @@ The i8kctl utility provides a command-line interface to the i8k kernel driver.
 When invoked without arguments the program reports the same information which
 can be read from the /proc/i8k file.
 
-A main diffence between 'i8kctl' and '/proc/i8k' is that i8kctl gets and sets
+A main difference between 'i8kctl' and '/proc/i8k' is that i8kctl gets and sets
 parameters in real-time. What not happens in /proc/i8k which is updated from
 time to time by the kernel module.
 
@@ -242,7 +246,7 @@ The i8kmon program can be used to monitor the CPU temperature and control
 automatically the fans accordingly to user-defined temperature thresholds.
 The program requires Tcl/Tk (>= 8.4).
 
-The program has builtin defaults and temperature thresholds but users can
+The program has built in defaults and temperature thresholds but users can
 specify their own settings in configuration files /etc/i8kmon.conf
 and ~/.i8kmon.
 
@@ -265,7 +269,7 @@ threshold of 50 degrees. If the temperature drops below 50 the program will
 switch back to state 0, if it rises above 70 it will enter state 2, and so on.
 For better operation the temperature ranges should be overlapping with an
 hysteresis of at least 10 degree, i.e. 1={50 70},2={60 80} is better than
-1={50 70},2={70 80}. It must be rembered that the low threshold of state 0
+1={50 70},2={70 80}. It must be remembered that the low threshold of state 0
 must be -1 and the high threshold of state 3 must be 128.
 
 If a laptop has only one fan the config should specify a '-' instead of the fan
