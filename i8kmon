@@ -2,7 +2,7 @@
 #
 # i8kmon -- Monitor the temperature on Dell laptops.
 #
-# Copyright (C) 2013-2015  Vitor Augusto <vitorafsr@gmail.com>
+# Copyright (C) 2013-2017  Vitor Augusto <vitorafsr@gmail.com>
 # Copyright (C) 2001-2005  Massimo Dal Zotto <dz@debian.org>
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -14,8 +14,6 @@
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-
-set PROG_VERSION "v1.32 12/08/2014"
 
 array set config {
     sysconfig	/etc/i8kmon.conf
@@ -283,7 +281,6 @@ proc parse_options {} {
     global config
     global status
     global argv
-    global PROG_VERSION
 
     for {set i 0} {$i < [llength $argv]} {incr i} {
 	set arg [lindex $argv $i]
@@ -320,8 +317,7 @@ proc parse_options {} {
     }
 
     if {$config(verbose) > 0} {
-	set copyright "Copyright (C) 2013-2015 Vitor Augusto <vitorafsr@gmail.com>"
-	puts "i8kmon $PROG_VERSION - $copyright"
+	puts "i8kmon"
 	parray config
 	parray status
     }

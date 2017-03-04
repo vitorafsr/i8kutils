@@ -1,6 +1,6 @@
-# Makefile for i8k Linux Utilities
+# Makefile for i8kutils
 #
-# Copyright (C) 2013-2015  Vitor Augusto <vitorafsr@gmail.com>
+# Copyright (C) 2013-2017  Vitor Augusto <vitorafsr@gmail.com>
 # Copyright (C) 2001-2005  Massimo Dal Zotto <dz@debian.org>
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -13,30 +13,13 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-ccflags-y = -Wall
+CFLAGS += -Wall
 
-pkgver := "1.43" #$(shell dpkg-parsechangelog --show-field Version)"
-CXXFLAGS = -DPROG_VERSION=${pkgver}
-arch := "$(shell uname -m)"
+all: i8kctl
 
-all: i8kctl smm
-
-i8kctl: i8kctl.c
-	$(CC) -Wall -c -g -DPROG_VERSION='${pkgver}' i8kctl.c
-	$(CC) i8kctl.o -o i8kctl
-
-probe_i8k_calls_time: probe_i8k_calls_time.c i8kctl.c
-	$(CC) -Wall ${CFLAGS} -c -DLIB -DPROG_VERSION='${pkgver}' i8kctl.c -o i8kctl-lib.o
-	$(CC) -Wall ${CFLAGS} -c probe_i8k_calls_time.c
-	$(CC) -Wall ${CFLAGS} ${LDFLAGS} -o probe_i8k_calls_time i8kctl-lib.o probe_i8k_calls_time.o -lrt
-
-module:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
-
-smm: smm.c
-	gcc -Wall -Werror -D${arch} smm.c -o smm
+probe_i8k_calls_time: probe_i8k_calls_time.c i8kctl.c probe_i8k_calls_time.o
+	$(CC) ${CFLAGS} -c -DLIB i8kctl.c -o i8kctl-lib.o
+	$(CC) ${CFLAGS} ${LDFLAGS} -o probe_i8k_calls_time i8kctl-lib.o probe_i8k_calls_time.o -lrt
 
 clean:
-	rm -f i8kctl i8k.ko probe_i8k_calls_time smm *.o
-
-obj-m += i8k.o
+	rm -f i8kctl probe_i8k_calls_time *.o

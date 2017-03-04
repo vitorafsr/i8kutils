@@ -2,7 +2,7 @@
  * i8kctl.c -- Utility to query the i8k kernel module on Dell laptops to
  * retrieve information
  *
- * Copyright (C) 2013-2015 Vitor Augusto <vitorafsr@gmail.com>
+ * Copyright (C) 2013-2017 Vitor Augusto <vitorafsr@gmail.com>
  * Copyright (C) 2001  Massimo Dal Zotto <dz@debian.org>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -339,12 +339,6 @@ void finish()
 int
 main(int argc, char **argv)
 {
-    if (argc >= 2) {
-	if ((strcmp(argv[1],"-v")==0) || (strcmp(argv[1],"--version")==0)) {
-	    argc--; argv++;
-	    printf("i8kctl %s\n", PROG_VERSION);
-	}
-    }
     if (argc >= 2) {
 	if ((strcmp(argv[1],"-h")==0) || (strcmp(argv[1],"--help")==0)) {
 	    usage();
