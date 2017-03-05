@@ -17,9 +17,14 @@ CFLAGS += -Wall
 
 all: i8kctl
 
-probe_i8k_calls_time: probe_i8k_calls_time.c i8kctl.c probe_i8k_calls_time.o
-	$(CC) ${CFLAGS} -c -DLIB i8kctl.c -o i8kctl-lib.o
-	$(CC) ${CFLAGS} ${LDFLAGS} -o probe_i8k_calls_time i8kctl-lib.o probe_i8k_calls_time.o -lrt
+i8kctl: i8kctl.c i8k.h
+
+i8kctl_DLIB.o: i8kctl.c i8k.h
+	$(CC) $(CFLAGS) -Wall -c -g -DLIB i8kctl.c -o i8kctl_DLIB.o
+
+probe_i8k_calls_time: i8kctl_DLIB.o probe_i8k_calls_time.c
+	$(CC) $(CFLAGS) -Wall -c -g -DLIB probe_i8k_calls_time.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -Wall -o probe_i8k_calls_time i8kctl_DLIB.o probe_i8k_calls_time.o
 
 clean:
 	rm -f i8kctl probe_i8k_calls_time *.o

@@ -36,10 +36,6 @@ PIDFILE=/var/run/$NAME.pid
 
 test -x $DAEMON || exit 5
 
-if [ -f /etc/default/$NAME ] ; then
-    . /etc/default/$NAME
-fi
-
 case "$1" in
     start)
 	    log_success_msg "Starting $DESC" "$NAME"

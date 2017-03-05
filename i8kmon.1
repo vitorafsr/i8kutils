@@ -1,15 +1,15 @@
 .TH i8kmon 1 "04 Mar 2017" "Vitor Augusto" Utilities
 .SH "NAME"
-i8kmon \- a monitor of temperature on Dell laptops
+i8kmon \- temperature monitor
 .SH "SYNOPSIS"
 i8kmon [\fI<options>\fP]
 .SH "DESCRIPTION"
 The i8kmon is a daemon that monitors the cpu temperature, and control the
-fan speed on Dell laptops. It does that by means of regularly reading the
-system temperature, and choosing apropriate speed of the fan biased
-on a table of thresholds.
+fan speed on some Dell laptops. It does that by means of regularly reading the
+system temperature, and choosing apropriate speed of the fans.
 .LP
-Inside i8kmon there is a default table of thresholds with the values below
+The change in the speed depends on a table of threshold. Inside i8kmon the
+default table of thresholds is as below
 .LP
     set config(0) {{0 0}  -1  60  -1  65}
     set config(1) {{1 0}  50  70  55  75}
@@ -20,25 +20,13 @@ This table can be customized at '/etc/i8kmon.conf', which will be read everytime
 i8kmon service starts.
 .LP
 On Debian and derivated OSes, i8kmon starts in the background by default as a service.
-.LP
-i8kutils was not designed to discover the type of fans a Dell system has. But you
-can discover which fans exist using 'i8kfan', issuing
-.LP
-    $ i8kfan 0 0
-.LP
-to turn the fans off. And then issuing
-.LP
-    $ i8kfan 2 -
-.LP
-to try to turn on the left fan. If some sound is audible, then the left fan exist.
-Repeating the steps with '$ i8kfan 0 0; i8kfan - 2' it is possible to discover
-if the right fan exist.
 .SH "OPTIONS"
 .LP
-The program accepts the following command\-line options:
+i8kmon accepts the following command\-line options when initiated by the user,
+not as a service:
 .TP
 \fB\-nc\fR, \fB\-\-nouserconfig\fR
-Don't attempt to source the ~/.i8kmon configfile, only /etc/i8kmon.conf.
+Doesn't read ~/.i8kmon configfile, only /etc/i8kmon.conf.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Report hardware status and program actions on stdout.
@@ -47,51 +35,39 @@ Report hardware status and program actions on stdout.
 Specifies the interval at which the daemon checks the
 hardware status. Useful values are in the range of 1\-5
 seconds. Default is 2 seconds.
-.TP
-\fB\-u\fR, \fB\-\-unit\fR C|F
-Specifies the temperature display unit. Default is C (Celsius).
-This option affects only the value shown in the applet. All other
-temperature values are always in Celsius.
 .SH "CONFIGURATION"
 .LP
-The program has builtin defaults to temperature thresholds but users can
+As said before, i8kmon has builtin default values of temperature thresholds. If
+users need, they can
 specify their own settings in configuration files /etc/i8kmon.conf and
-~/.i8kmon. It is also possible to specify values to others internal variables
-that change the behavior of i8kmon.
+~/.i8kmon. It is also possible to specify values to others variables
+that change i8kmon behavior.
 .LP
 The variables and values are as follows.
-.TP
-\fBset config(sysconfig)\fR   /etc/i8kmon.conf
-System configuration file
-.TP
-\fBset config(userconfig)\fR  ~/.i8kmon
-User configuration file
 .TP
 \fBset config(i8kfan)\fR  /usr/bin/i8kfan
 i8kfan executable path
 .TP
 \fBset config(acpi)\fR    "acpi"
-Filename of the apci executable
+Filename of the apci executable. i8kmon uses acpi to query whether notebook is
+on-line or on battery.
 .TP
 \fBset config(use_conf)\fR    1
-Set whether user configuration file must be read or not
+Set whether user configuration file must be read or not when user starting
+i8kmon. Default is 1.
 .TP
 \fBset config(verbose)\fR 0
 Print verbose logs
 .TP
-\fBset config(timeout)\fR 5
-Timeout
-.TP
-\fBset config(unit)\fR    C
-Unit of measure
+\fBset config(timeout)\fR 2
+Timeout. Default is 2.
 .TP
 \fBset config(t_high)\fR  80
-Maximum high temperature
+Maximum high temperature. Default is 80.
 .LP
-The following variables and values below do not exist with default values, they are
-acquired at every startup of i8kmon service. If these variables are set at config
-file, i8kmon will not probe for them. For some users, these variables avoid
-i8kmon turns on fans at max speed at every startup which is a annoying behavior.
+The following variables set fans speeds. If these variables are set at config
+file, i8kmon will not probe for them. The probe moment turns on fans at max
+speed.
 .TP
 \fBset status(leftspeed)\fR   "0 1000 2000 3000"
 Speed values (rpm) of left fan at velocities 0, 1, 2, 3
@@ -99,10 +75,11 @@ Speed values (rpm) of left fan at velocities 0, 1, 2, 3
 \fBset status(rightspeed)\fR   "0 1000 2000 3000"
 Speed values (rpm) of right fan at velocities 0, 1, 2, 3
 .LP
-The daemon defines 4 states with different fan speeds ({0 0}, {1 0}, {1 1},
-{2 2}) and for each state are defined the temperature thresholds which cause
-the switching to a higher or lower state. Furthermore each state can have
-different thresholds for operation on ac power or battery.
+The daemon defines 4 states (0, 1, 2, 3) with different combinations of fan
+speeds ({0 0}, {1 0}, {1 1},
+{2 2}) and for each state is defined the temperature thresholds which cause
+the fans to switch to a higher or lower state. Each state can have
+different thresholds for operation on ac power or on battery.
 For example the following configuration:
 .IP
 set config(0) {{0 0}  \-1  60  \-1  65}
@@ -114,15 +91,15 @@ set config(2) {{1 1}  60  80  65  85}
 set config(3) {{2 2}  70 128  75 128}
 .LP
 defines state 0 with both fans off, high threshold of 60 degrees (65 on
-battery) and low threshold \-1, which is actually never reached since 0 is the
-lowest state. When the high threshold is reached the program switches to state
+battery) and low threshold \-1 degrees, which is actually never reached since 0 is the
+lowest temperature. When the high temperature threshold is reached the program switches to state
 1 (left low, right off) which has a high threshold of 70 degrees and a low
-threshold of 50 degrees. If the temperature drops below 50 the program will
+threshold of 50 degrees. If on ac power the temperature drops below 50 the program will
 switch back to state 0, if it rises above 70 it will enter state 2, and so on.
 For better operation the temperature ranges should be overlapping with an
 hysteresis of at least 10 degrees, i.e. 1={50 70},2={60 80} is better than
 1={50 70},2={70 80}. It must be remembered that the low threshold of state 0
-must be \-1 and the high threshold of state 3 must be 128.
+must be \-1 degrees and the high threshold of state 3 must be 128 degrees.
 .LP
 If the laptop has only one fan, it is better to specify a '-' instead of the fan
 speed of the missing fan. For example:
