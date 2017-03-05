@@ -12,7 +12,6 @@ build-arch:
 
 clean:
 	dh_testdir
-	rm -f build-stamp
 	dh_clean
 
 binary: binary-arch binary-indep
@@ -22,7 +21,6 @@ binary-arch: build
 	dh_install -pi8kutils
 	dh_installchangelogs -pi8kutils
 	dh_installdocs -pi8kutils
-	#dh_installexamples -pi8kutils
 	dh_installinit --name=i8kmon
 	dh_installman *.1
 	ln -s i8kctl.1 $(CURDIR)/debian/i8kutils/usr/share/man/man1/i8kfan.1
@@ -40,4 +38,4 @@ build-indep: ;
 
 binary-indep: ;
 
-.PHONY: build clean binary-arch binary
+.PHONY: build build-arch build-indep clean binary binary-arch binary-indep

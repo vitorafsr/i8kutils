@@ -7,9 +7,7 @@ OVERVIEW
 i8kutils package contains user-space programs for controlling the fans on some Dell
 laptops.
 
-Note: i8kutils is entirely built upon the i8k kernel module. And this driver was develop
-many years ago with NO support from Dell. If it stops working nowadays, the developer
-has no way to correct it.
+Note: i8kutils is entirely built upon the dell-smm-hwmon kernel module.
 
 These data contains the states and the system temperature along
 with others infos. The fields returned in a query to the system are
@@ -29,9 +27,8 @@ summarized below.
 
     * volume buttons status (not the multimedia buttons)
 
-The data are collected by the i8k kernel module that are included in every modern
-kernel (precisely, since kernel 2.4). On start, i8kutils monitor automatically
-loads the module.
+The data are collected from the dell-smm-hwmon kernel module that is included in recent
+kernels.
 
 The i8kutils package includes the following utilities:
 
@@ -40,8 +37,6 @@ The i8kutils package includes the following utilities:
     * i8kmon   - temperature monitor with fan control capability
 
     * i8kfan   - utility to set state (speed) of fans
-
-    * i8kui    - user interface of i8kutils
 
 The i8kctl perform queries and sets related to fan control as
 read temperature, turn the fan on. The i8kmon continuously monitor the
@@ -55,11 +50,7 @@ The latest version of the i8kutils package can be retrieved at:
 
     https://launchpad.net/i8kutils
 
-A copy of the source code of i8k kernel module is available in i8kutils package.
-
-To load the module, issue 'modprobe i8k' in the terminal as root, but normally
-this procedure is not necessary as the module is loaded by default when the
-i8kmon monitor starts as a service.
+The module is supposed to be loaded in the system to i8kmon service starts.
 
 
 LICENCE
@@ -90,28 +81,6 @@ Public License can be found in `/usr/share/common-licenses/GPL'.
 
 THE KERNEL DRIVER
 =================
-
-Since version 2.4.14-pre8 of the kernel the i8k SMM driver is included in
-the core kernel distribution. The driver source included in this package is
-needed only if you want to compile the module for an older kernel version
-or if you need a more recent version then the one in the Linux kernel.
-
-This module will probably work on any recent Dell laptop. Note that on some
-models or BIOS versions the fan speed is not available. On some BIOS also the
-BIOS version is not available from SMM but the driver is able to obtain it using
-another method.
-
-On loading the module checks for the presence of an Dell Inspiron, Latitude,
-MM061, MP061, Precision or Vostro laptop and refuses to load if running on an
-unknown system. You can however force loading of the driver, for testing it on
-unknown hardware, by passing the "force=1" option to insmod:
-
-    insmod i8k.o force=1
-
-Note that force loading of the module on unknown hardware could crash your
-system and will anyway 'taint' the kernel. The force option is provided
-only for testing purposes or for loading on systems where the BIOS version
-can't be read from the SMM BIOS.
 
 The information provided by the kernel driver can be accessed by simply
 reading the /proc/i8k file. For example:
@@ -181,47 +150,20 @@ You can specify the module parameters when loading the module or as kernel
 option when booting the kernel if the driver is compiled statically.
 
 To have the module loaded automatically at boot you must manually add the
-line "i8k" into the file /etc/modules or use the modconf utility, if
+line "dell-smm-hwmon" into the file /etc/modules or use the modconf utility, if
 available in your distribution, and select the i8k module. For example:
 
     $ cat /etc/modules
     # /etc/modules: kernel modules to load at boot time.
     #
-    # This file should contain the names of kernel modules that are
-    # to be loaded at boot time, one per line.  Comments begin with
-    # a #, and everything on the line after them are ignored.
-    #
-    apm
-    i8k
+    # This file contains the names of kernel modules that should be loaded
+    # at boot time, one per line. Lines beginning with "#" are ignored.
+    dell-smm-hwmon
 
-Any module parameters must be specified in /etc/modules.conf, for example:
+Any module parameters must be specified in /etc/modprobe.d/dell-smm-hwmon.conf, for example:
 
-    $ grep i8k /etc/modules.conf
-    options i8k handle_buttons=1
-
-If you are using modconf the file /etc/modules.conf is updated automatically
-with the options specified in the user interface.
-
-
-TROUBLESHOOTING
-===============
-
-If you have problems loading the kernel module or have successfully tested
-it on different hardware please let me know your results. Include
-the following information:
-
-    laptop model
-    BIOS version
-    driver version
-    i8kmon version
-    kernel config file
-    kernel messages while loading the driver
-    output of "cat /proc/i8k"
-    output of "i8kmon -v"
-    output of the "smm-test" script included with the sources
-
-Before reporting bugs be sure to be using the latest kernel module and the
-latest BIOS available for your laptop.
+    $ cat /etc/modprobe.d/dell-smm-hwmon.conf 
+    options dell-smm-hwmon restricted=0
 
 
 THE I8KCTL UTILITY
@@ -239,114 +181,10 @@ The program can take an optional argument which can be used to select only one
 of the items and to control the fan status.
 
 
-THE I8KMON APPLET/DAEMON
-========================
-
-The i8kmon program can be used to monitor the CPU temperature and control
-automatically the fans accordingly to user-defined temperature thresholds.
-The program requires Tcl/Tk (>= 8.4).
-
-The program has built in defaults and temperature thresholds but users can
-specify their own settings in configuration files /etc/i8kmon.conf
-and ~/.i8kmon.
-
-The daemon defines 4 states with different fan speeds ({0 0}, {1 0}, {1 1},
-{2 2}) and for each state are defined the temperature thresholds which cause
-the switching to a higher or lower state. Furthermore each state can have
-different thresholds for operation on ac power or battery.
-For example the following configuration:
-
-    set config(0) {{0 0}  -1  60  -1  65}
-    set config(1) {{1 0}  50  70  55  75}
-    set config(2) {{1 1}  60  80  65  85}
-    set config(3) {{2 2}  70 128  75 128}
-
-defines state 0 with both fans off, high threshold of 60 degrees (65 on
-battery) and low threshold -1, which is actually never reached since 0 is the
-lowest state. When the high threshold is reached the program switches to state
-1 (left low, right off) which has a high threshold of 70 degrees and a low
-threshold of 50 degrees. If the temperature drops below 50 the program will
-switch back to state 0, if it rises above 70 it will enter state 2, and so on.
-For better operation the temperature ranges should be overlapping with an
-hysteresis of at least 10 degree, i.e. 1={50 70},2={60 80} is better than
-1={50 70},2={70 80}. It must be remembered that the low threshold of state 0
-must be -1 and the high threshold of state 3 must be 128.
-
-If a laptop has only one fan the config should specify a '-' instead of the fan
-speed of the missing fan, for example:
-
-    set config(2) {{1 -}  60  80  65  85}
-
-
 COMPILATION
 ===========
 
-To compile the programs type "make". To install "make install", as root.
-
-To compile the kernel module, if it is not already included in the kernel,
-type "make module". The module can be loaded on any 2.4.x kernel with
-"insmod -f i8k.o".
-
-If you are using kernel 2.4.14 or later you probably already have the module
-compiled in your system.
-
-
-DELL INSPIRON 8000 BIOS BUGS
-============================
-
-Yes, the Dell BIOS has many bugs. I have found the following in I8K BIOS A17:
-
-1) CPU temperature bug
-
-Sometimes the BIOS reports a temperature of 153 (0x99) degrees, which is
-clearly out of range. It seems that it happens when the BIOS is changing
-the fan speed.
-
-# while true; do ./smm 10a3; done | grep ' 0'
-...
-eax=0000004b ebx=00004c80 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
-eax=0000004c ebx=00004c80 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
-eax=00000099 ebx=00003a80 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
-eax=0000004c ebx=00005243 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
-...
-eax=00000051 ebx=00005243 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
-eax=00000052 ebx=00005243 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
-eax=00000099 ebx=00003a80 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
-eax=00000052 ebx=00005746 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
-...
-
-2) Fan speed bug with a stuck fan
-
-If for some reason a fan is stuck the BIOS reports a speed of 1920rpm instead
-of 0 as it should be. In the same condition it sometimes reports also a speed
-of 7200rpm, but this seems much more infrequent.
-
-# ./smm 1a3 200
-eax=000001a3 ebx=00000200 ecx=00000000 edx=00000000 esi=00000000 edi=00000000
-eax=00000000 ebx=00000200 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
-# ./smm a3 0
-eax=000000a3 ebx=00000000 ecx=00000000 edx=00000000 esi=00000000 edi=00000000
-eax=00000002 ebx=00000000 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
-# ./smm 2a3 0
-eax=000002a3 ebx=00000000 ecx=00000000 edx=00000000 esi=00000000 edi=00000000
-eax=00000040 ebx=00000000 ecx=00000000 edx=00000000 esi=00000000 edi=00000000 0
-        ^^^^
-	1920rpm instead of 0
-
-3) The I8000 BIOS with versions A18 and greater are very buggy and don't work
-   well with Linux. If you have an I8000 I recommend using BIOS A17.
-
-4) After a suspend/resume the keyboard sends an <Enter> event. If the focus
-   is over a window the <Enter> will be sent to the correspondig application.
-   This can insert a newline in file you were editing, execute an incomplete
-   command in an xterm or do other random things. This bug has however nothing
-   to to with i8kutils.
-
-5) If you have an Actiontec eepro100 ethernet controller its PCI registers
-   will not be reinitialized after a suspend/resume and the your network
-   controller will become unusable. The only way to fix this is to save
-   the PCI registers before the suspend and restore them after resume.
-   This bug doesn't affect i8kutils.
+To compile the programs type "make".
 
 
 CONTRIBUTORS

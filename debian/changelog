@@ -1,7 +1,10 @@
 i8kutils (1.43) unstable; urgency=low
 
   * Remove ui from i8kmon.
-  * Create i8kui utility.
+  * Removed smm tool as smm.c code is obsolete. smm functions must be at kernel module.
+  * Updated i8kmon to work with dell-smm-hwmon kernel module.
+  * Updated manpages.
+  * Drop dependency on tk package.
 
  -- Vitor Augusto <vitorafsr@gmail.com>  Mon, 08 Dec 2014 09:37:27 -0200
 

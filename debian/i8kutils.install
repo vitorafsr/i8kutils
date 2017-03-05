@@ -1,1 +1,3 @@
-i8kmon i8kfan i8kctl i8kui /usr/bin/
+i8kmon i8kfan i8kctl /usr/bin/
+dell-smm-hwmon.conf /etc/modprobe.d/
+i8kmon.conf /etc/
