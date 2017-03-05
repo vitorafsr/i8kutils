@@ -1,13 +1,13 @@
 .TH i8kctl 1 2017-02-26 "Vitor Augusto"
 .SH "NAME"
 .LP
-i8kctl \- Utility to get information, and set state about i8kutil
+i8kctl \- Utility to get information, and set fans states
 .SH "SYNOPSIS"
 \fBi8kctl\fP [\fI<param>\fP [\fI<args>\fP]]
 .SH "DESCRIPTION"
 .LP
 The i8kctl can be used to retrieve the informations listed below. It does that
-by means of querying the system through the i8k kernel module. When invoked
+by means of querying the system through the dell-smm-hwmon kernel module. When invoked
 without arguments it reports all the information at once in one line of text.
 The information is the same as the file \fB/proc/i8k\fR.
 .IP
@@ -31,8 +31,8 @@ The information is the same as the file \fB/proc/i8k\fR.
 .br
 10. fn buttons status
 .LP
-The following parameters are to select one of the
-informaitons: \fBversion\fR, \fBbios\fR, \fBid\fR,
+The following parameters select one of the
+informations: \fBversion\fR, \fBbios\fR, \fBid\fR,
 \fBtemp\fR, \fBfan\fR, \fBspeed\fR, \fBac\fR and \fBfn\fR.
 .LP
 Some examples of usage and output are below.
