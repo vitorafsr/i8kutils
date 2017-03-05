@@ -2,8 +2,8 @@
 #
 # Test the SMM BIOS.
 #
-# Note on 04 Mar 2017: File kept in the source code as a reference to an old smm
-# tool that no longer works in recent kernels. smm must be reimplemented inside
+# Note on 04 Mar 2017: Test file kept in the source code as a reference to an old smm
+# tool that no longer works in recent kernels. smm tool must be reimplemented inside
 # the dell-smm-hwmon kernel module.
 #
 # WARNING!!! READ CAREFULLY BEFORE USING THIS PROGRAM!!!

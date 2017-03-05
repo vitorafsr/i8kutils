@@ -27,6 +27,7 @@
 #include <unistd.h>
 
 #include "i8k.h"
+#include "i8kctl.h"
 
 static int i8k_fd;
 
@@ -316,7 +317,7 @@ status()
 void
 usage()
 {
-    printf("Usage: i8kctl [-v] [fan [<l> <r>] | speed | version | bios | id | temp" \
+    printf("Usage: i8kctl [fan [<l> <r>] | speed | version | bios | id | temp" \
            "| ac | fn]\n");
     printf("       i8kctl [-h]\n");
 }
@@ -370,6 +371,7 @@ main(int argc, char **argv)
     }
     else if (strcmp(argv[1],"version")==0) {
         printf("%s\n", I8K_PROC_FMT);
+        ret = 0;
     }
     else if (strcmp(argv[1],"speed")==0) {
         ret = fan_speed(argc,argv);

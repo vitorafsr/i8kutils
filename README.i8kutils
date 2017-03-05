@@ -150,8 +150,7 @@ You can specify the module parameters when loading the module or as kernel
 option when booting the kernel if the driver is compiled statically.
 
 To have the module loaded automatically at boot you must manually add the
-line "dell-smm-hwmon" into the file /etc/modules or use the modconf utility, if
-available in your distribution, and select the i8k module. For example:
+line "dell-smm-hwmon" into the file /etc/modules or use the modconf utility. For example:
 
     $ cat /etc/modules
     # /etc/modules: kernel modules to load at boot time.
@@ -160,7 +159,8 @@ available in your distribution, and select the i8k module. For example:
     # at boot time, one per line. Lines beginning with "#" are ignored.
     dell-smm-hwmon
 
-Any module parameters must be specified in /etc/modprobe.d/dell-smm-hwmon.conf, for example:
+Any module parameters must be specified in /etc/modprobe.d/dell-smm-hwmon.conf.
+Recent kernels required the option below to work.
 
     $ cat /etc/modprobe.d/dell-smm-hwmon.conf 
     options dell-smm-hwmon restricted=0
@@ -169,7 +169,7 @@ Any module parameters must be specified in /etc/modprobe.d/dell-smm-hwmon.conf, 
 THE I8KCTL UTILITY
 ==================
 
-The i8kctl utility provides a command-line interface to the i8k kernel driver.
+The i8kctl utility provides a command-line interface to the dell-smm-hwmon kernel driver.
 When invoked without arguments the program reports the same information which
 can be read from the /proc/i8k file.
 

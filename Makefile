@@ -17,9 +17,9 @@ CFLAGS += -Wall
 
 all: i8kctl
 
-i8kctl: i8kctl.c i8k.h
+i8kctl: i8kctl.c i8k.h i8kctl.h
 
-i8kctl_DLIB.o: i8kctl.c i8k.h
+i8kctl_DLIB.o: i8kctl.c i8k.h i8kctl.h
 	$(CC) $(CFLAGS) -Wall -c -g -DLIB i8kctl.c -o i8kctl_DLIB.o
 
 probe_i8k_calls_time: i8kctl_DLIB.o probe_i8k_calls_time.c

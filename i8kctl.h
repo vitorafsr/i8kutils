@@ -1,5 +1,5 @@
-int i8k_get_bios_version();
-int i8k_get_machine_id();
+char * i8k_get_bios_version();
+char * i8k_get_machine_id();
 int i8k_get_cpu_temp();
 int i8k_get_fan_status(int);
 int i8k_get_fan_status(int);
