@@ -21,7 +21,9 @@ binary-arch: build
 	dh_install -pi8kutils
 	dh_installchangelogs -pi8kutils
 	dh_installdocs -pi8kutils
+	dh_systemd_enable --name=i8kmon
 	dh_installinit --name=i8kmon
+	dh_systemd_start --name=i8kmon
 	dh_installman *.1
 	ln -s i8kctl.1 $(CURDIR)/debian/i8kutils/usr/share/man/man1/i8kfan.1
 	dh_link -pi8kutils

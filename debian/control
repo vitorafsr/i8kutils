@@ -2,7 +2,7 @@ Source: i8kutils
 Section: utils
 Priority: optional
 Maintainer: Vitor Augusto <vitorafsr@gmail.com>
-Build-Depends: debhelper (>= 8)
+Build-Depends: debhelper (>= 9), dh-systemd (>= 1.5)
 Standards-Version: 3.9.6
 Homepage: https://launchpad.net/i8kutils
 
