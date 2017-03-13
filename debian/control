@@ -2,8 +2,8 @@ Source: i8kutils
 Section: utils
 Priority: optional
 Maintainer: Vitor Augusto <vitorafsr@gmail.com>
-Build-Depends: debhelper (>= 9), dh-systemd (>= 1.5)
-Standards-Version: 3.9.6
+Build-Depends: debhelper (>= 9), dh-systemd (>= 1.5), lsb-base (>= 3.0-6)
+Standards-Version: 3.9.8
 Homepage: https://launchpad.net/i8kutils
 
 Package: i8kutils

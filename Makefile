@@ -13,7 +13,11 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+CFLAGS:=$(shell dpkg-buildflags --get CFLAGS)
+LDFLAGS:=$(shell dpkg-buildflags --get LDFLAGS)
 CFLAGS += -Wall
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
 all: i8kctl
 
