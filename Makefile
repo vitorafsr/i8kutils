@@ -13,9 +13,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-CFLAGS:=$(shell dpkg-buildflags --get CFLAGS)
-LDFLAGS:=$(shell dpkg-buildflags --get LDFLAGS)
-CFLAGS += -Wall
+CFLAGS:=-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wall
+LDFLAGS:=-Wl,-Bsymbolic-functions -Wl,-z,relro
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 

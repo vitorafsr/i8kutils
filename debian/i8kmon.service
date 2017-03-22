@@ -1,5 +1,6 @@
 [Unit]
 Description=Dell laptop thermal monitoring
+Documentation=man:i8kmon
 ConditionPathExists=/proc/i8k
 
 [Service]
