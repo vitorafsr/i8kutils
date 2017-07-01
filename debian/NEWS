@@ -1,0 +1,7 @@
+i8kutils (1.43) unstable; urgency=low
+
+  i8kbuttons was removed on release 1.42 as this app was outdated
+  to control multimedia Fn buttons on Inspiron laptops. To those who needs
+  this tool, the app is available on old releases of i8kutils.
+
+ -- Vitor Augusto <vitorafsr@gmail.com>  Sat, 28 Mar 2015 22:54:28 -0300
