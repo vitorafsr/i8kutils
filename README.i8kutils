@@ -206,7 +206,7 @@ Contributors are listed here, in alphabetical order.
 	Asm code for calling the SMM BIOS on the I8K. Without his help
 	this work wouldn't have been possible.
 
-    Karl E. J\F8rgensen <karl@jorgensen.com>
+    Karl E. Jørgensen <karl@jorgensen.com>
 
 	init script for i8kmon daemon
 
