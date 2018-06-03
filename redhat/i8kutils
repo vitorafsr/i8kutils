@@ -1,7 +1,0 @@
-#!/bin/bash
-echo -n "Loading i8kutils and settings..." &
-#i8kmon -d &
-i8kbuttons -u "aumix -v +10" -d "aumix -v  -10"  -m "aumix -v 0" -r 100 -v &
-echo "done..." &
-# kbdrate -r 30 -d 100 &
-
