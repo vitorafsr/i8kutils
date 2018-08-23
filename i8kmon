@@ -24,10 +24,12 @@ array set config {
     verbose	0
     timeout	2
     t_high	80
+    num_configs	5
     0		{{0 0}  -1  60  -1  65}
     1		{{1 0}  50  70  55  75}
     2		{{1 1}  60  80  65  85}
-    3		{{2 2}  70 128  75 128}
+    3		{{2 1}  65  85  70  90}
+    4		{{2 2}  70 128  75 128}
 }
 
 array set status {
@@ -71,7 +73,7 @@ proc read_config {} {
     	}
     }
 
-    foreach key {0 1 2 3} {
+    for {set key 0}  {$key < $config(num_configs)} {incr key} {
 	set fans  [lindex $config($key) 0]
 	set lo_ac [lindex $config($key) 1]
 	set hi_ac [lindex $config($key) 2]
@@ -89,7 +91,7 @@ proc read_config {} {
 	}
 
 	# set temperature to 128 to hi_ac and hi_bt at config(3)
-	if {$key == 3} {
+	if {$key ==  [expr $config(num_configs)-1] } {
 	    set hi_ac 128
 	    set hi_bt 128
 	}
@@ -190,9 +192,6 @@ proc fan_control {} {
     set state $status(state)
     set temp  $status(temp)
 
-    # store state because it may change below
-    set actual_state $state
-
     set status(t_low)  [lindex $config($state) $index]
     set status(t_high) [lindex $config($state) [expr $index+1]]
 
@@ -220,9 +219,7 @@ proc fan_control {} {
 	}
     }
 
-    if {$state != $actual_state} {
-	set_fan $state
-    }
+    set_fan $state
 }
 
 proc set_fan {state} {
@@ -249,6 +246,8 @@ proc set_fan {state} {
 
     if {$status(nfans) < 2} { set right "-" }
 
+    if {$left == "-" && $right == "-"} {return}
+    
     if {$config(verbose) > 0} {
         puts "$config(i8kfan) $left $right"
     }
