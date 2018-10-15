@@ -16,38 +16,34 @@
 # General Public License for more details.
 
 array set config {
-    sysconfig	/etc/i8kmon.conf
-    userconfig	~/.i8kmon
-    i8kfan	/usr/bin/i8kfan
-    acpi    "acpi"
-    use_conf    1
-    verbose	0
-    timeout	2
-    t_high	80
-    num_configs	5
-    0		{{0 0}  -1  60  -1  65}
-    1		{{1 0}  50  70  55  75}
-    2		{{1 1}  60  80  65  85}
-    3		{{2 1}  65  85  70  90}
-    4		{{2 2}  70 128  75 128}
+    sysconfig    /etc/i8kmon.conf
+    userconfig   ~/.i8kmon
+    i8kfan       /usr/bin/i8kfan
+    acpi         "acpi"
+    use_conf     1
+    verbose      0
+    timeout      2
+    t_high       80
+    num_configs  5
+    0            {{0 0}  -1  60  -1  65}
+    1            {{1 0}  50  70  55  75}
+    2            {{1 1}  60  80  65  85}
+    3            {{2 1}  65  85  70  90}
+    4            {{2 2}  70 128  75 128}
 }
 
 array set status {
-    leftspeed	{}
-    rightspeed	{}
-    nfans	2
-    acpi_timer	0
-    state	0
-    temp	0
-    lstate	-2
-    rstate	-2
-    lspeed	0
-    rspeed	0
-    lstuck	0
-    rstuck	0
-    ac		0
-    t_low	0
-    t_high	0
+    leftspeed   {}
+    rightspeed  {}
+    nfans       2
+    acpi_timer  0
+    state       0
+    temp        0
+    lstate      -2
+    rstate      -2
+    ac          0
+    t_low       0
+    t_high      0
 }
 
 proc read_config {} {
@@ -56,10 +52,10 @@ proc read_config {} {
 
     # read system config file
     if {[file exists $config(sysconfig)]} {
-    	source $config(sysconfig)
-	if {$config(verbose) > 0} {
-	    puts "reading system config file"
-	}
+        source $config(sysconfig)
+        if {$config(verbose) > 0} {
+            puts "reading system config file"
+        }
     }
 
     # read user config file
@@ -67,36 +63,36 @@ proc read_config {} {
     if {$config(use_conf) != 0} {
         if {[file exists $config(userconfig)]} {
             source $config(userconfig)
-	    if {$config(verbose) > 0} {
-		puts "reading user config file"
-	    }
-    	}
+            if {$config(verbose) > 0} {
+                puts "reading user config file"
+            }
+        }
     }
 
     for {set key 0}  {$key < $config(num_configs)} {incr key} {
-	set fans  [lindex $config($key) 0]
-	set lo_ac [lindex $config($key) 1]
-	set hi_ac [lindex $config($key) 2]
-	set lo_bt [lindex $config($key) 3]
-	set hi_bt [lindex $config($key) 4]
+        set fans  [lindex $config($key) 0]
+        set lo_ac [lindex $config($key) 1]
+        set hi_ac [lindex $config($key) 2]
+        set lo_bt [lindex $config($key) 3]
+        set hi_bt [lindex $config($key) 4]
 
-	# check that for each key hi temp > lo temp
-	if {$lo_ac > $hi_ac} { set hi_ac [expr $lo_ac + 5]}
-	if {$lo_bt > $hi_bt} { set hi_bt [expr $lo_bt + 5]}
+        # check that for each key hi temp > lo temp
+        if {$lo_ac > $hi_ac} {set hi_ac [expr $lo_ac + 5]}
+        if {$lo_bt > $hi_bt} {set hi_bt [expr $lo_bt + 5]}
 
-	# set temperature to -1 to lo_ac and lo_bt at config(0)
-	if {$key == 0} {
-	    set lo_ac -1
-	    set lo_bt -1
-	}
+        # set temperature to -1 to lo_ac and lo_bt at config(0)
+        if {$key == 0} {
+            set lo_ac -1
+            set lo_bt -1
+        }
 
-	# set temperature to 128 to hi_ac and hi_bt at config(3)
-	if {$key ==  [expr $config(num_configs)-1] } {
-	    set hi_ac 128
-	    set hi_bt 128
-	}
+        # set temperature to 128 to hi_ac and hi_bt at config(3)
+        if {$key == [expr $config(num_configs)-1]} {
+            set hi_ac 128
+            set hi_bt 128
+        }
 
-	set config($key) [list $fans $lo_ac $hi_ac $lo_bt $hi_bt]
+        set config($key) [list $fans $lo_ac $hi_ac $lo_bt $hi_bt]
     }
 }
 
@@ -114,9 +110,7 @@ proc check_status {} {
     global config
     global status
 
-    if {![read_i8k_status]} {
-	return
-    }
+    if {![read_i8k_status]} {return}
 
     fan_control
 }
@@ -125,35 +119,41 @@ proc read_i8k_status {} {
     global config
     global status
 
-    set temp [eval exec "i8kctl temp"]
-    set status(temp) $temp
-    set state [eval exec "i8kctl fan"]
-    set status(lstate) [lindex $state 0]
-    set status(rstate) [lindex $state 1]
+    set status(temp) [eval exec "i8kctl temp"]
 
-    # retrieve probed fans speeds stored on variables and set the correct speed values
-    # using stored values improve performance as it does not requires reading
-    # values all the time from the system, and also from the fact that reading
-    # fan speeds is a slow call that freezes the computer in some Dell laptops models.
-    if {$status(lstate) != -1} {
-	set status(lspeed) [lindex $status(leftspeed) $status(lstate)]
-    } else {
-	set status(lspeed) -1
-    }
-    if {$status(rstate) != -1} {
-	set status(rspeed) [lindex $status(rightspeed) $status(rstate)]
-    } else {
-	set status(rspeed) -1
+    set speed [eval exec "i8kctl speed"]
+    set lspeed [lindex $speed 0]
+    set rspeed [lindex $speed 1]
+
+    # Calculate fan state from probed fans speeds.
+    # It improve performance as it does not requires reading values all the time from the system,
+    # since reading fan speeds is a slow call that freezes the computer in some Dell laptops models.
+    set status(lstate) 0
+    set status(rstate) 0
+    set ldiff_speed "+inf"
+    set rdiff_speed "+inf"
+
+    # Search for nearest value
+    for {set idx_speed 0}  {$idx_speed < 4} {incr idx_speed} {
+        if {[expr abs($lspeed - [lindex $status(leftspeed) $idx_speed]) < $ldiff_speed]} {
+            set ldiff_speed [expr abs($lspeed - [lindex $status(leftspeed) $idx_speed])]
+            set status(lstate) $idx_speed
+        }
+
+        if {[expr abs($rspeed - [lindex $status(rightspeed) $idx_speed]) < $rdiff_speed]} {
+            set rdiff_speed [expr abs($rspeed - [lindex $status(rightspeed) $idx_speed])]
+            set status(rstate) $idx_speed
+        }
     }
 
     # If AC status is not available read it from procfs
     set ac [eval exec "i8kctl ac"]
     if {$ac < 0} {
-	read_ac_status
+        read_ac_status
     }
 
     if {$config(verbose) > 0} {
-        puts "temp, left fan state, right fan state, ac state: $status(temp) $status(lstate) $status(rstate) $status(ac)"
+        puts "temp, \[fan state\], \[fan speed\], ac state:  $status(temp) \[$status(lstate) $status(rstate)\] \[$lspeed $rspeed\] $status(ac)"
     }
 
     return 1
@@ -165,7 +165,7 @@ proc read_ac_status {} {
 
     # Read ac status once per minute
     if {[incr status(acpi_timer) -1] > 0} {
-	return 1
+        return 1
     }
 
     set status(acpi_timer) [expr 60 / $config(timeout)]
@@ -196,27 +196,27 @@ proc fan_control {} {
     set status(t_high) [lindex $config($state) [expr $index+1]]
 
     while {$temp < 128 && $temp >= $status(t_high)} {
-	if {$config(verbose) > 0} {
-	    puts -nonewline "# ($temp>=$status(t_high)), "
-	}
-	incr state
-	set status(t_low)  [lindex $config($state) $index]
-	set status(t_high) [lindex $config($state) [expr $index+1]]
-	if {$config(verbose) > 0} {
-	    puts "state=$state, low=$status(t_low), high=$status(t_high)"
-	}
+        if {$config(verbose) > 0} {
+            puts -nonewline "# ($temp>=$status(t_high)), "
+        }
+        incr state
+        set status(t_low)  [lindex $config($state) $index]
+        set status(t_high) [lindex $config($state) [expr $index+1]]
+        if {$config(verbose) > 0} {
+            puts "state=$state, low=$status(t_low), high=$status(t_high)"
+        }
     }
 
     while {$temp > 0 && $temp <= $status(t_low)} {
-	if {$config(verbose) > 0} {
-	    puts -nonewline "# ($temp<=$status(t_low)), "
-	}
-	incr state -1
-	set status(t_low)  [lindex $config($state) $index]
-	set status(t_high) [lindex $config($state) [expr $index+1]]
-	if {$config(verbose) > 0} {
-	    puts "state=$state, low=$status(t_low), high=$status(t_high)"
-	}
+        if {$config(verbose) > 0} {
+            puts -nonewline "# ($temp<=$status(t_low)), "
+        }
+        incr state -1
+        set status(t_low)  [lindex $config($state) $index]
+        set status(t_high) [lindex $config($state) [expr $index+1]]
+        if {$config(verbose) > 0} {
+            puts "state=$state, low=$status(t_low), high=$status(t_high)"
+        }
     }
 
     set_fan $state
@@ -247,7 +247,7 @@ proc set_fan {state} {
     if {$status(nfans) < 2} { set right "-" }
 
     if {$left == "-" && $right == "-"} {return}
-    
+
     if {$config(verbose) > 0} {
         puts "$config(i8kfan) $left $right"
     }
@@ -272,60 +272,58 @@ proc parse_options {} {
     global argv
 
     for {set i 0} {$i < [llength $argv]} {incr i} {
-	set arg [lindex $argv $i]
-	switch -- $arg {
-	    -\? - -h - -help - --help {
-		usage
-		exit
-	    }
-	    --nouserconfig - -nc {
-		set config(use_conf) 0
-	    }
-	    --verbose - -v {
-		set config(verbose) 1
-	    }
-	    --timeout - -t {
-		set config(timeout) [lindex $argv [incr i]]
-	    }
-	    -- {
-		continue
-	    }
-	    default {
-		puts stderr "invalid option: $arg"
-		exit 1
-	    }
-	}
+        set arg [lindex $argv $i]
+        switch -- $arg {
+            -\? - -h - -help - --help {
+                usage
+                exit
+            }
+            --nouserconfig - -nc {
+                set config(use_conf) 0
+            }
+            --verbose - -v {
+                set config(verbose) 1
+            }
+            --timeout - -t {
+                set config(timeout) [lindex $argv [incr i]]
+            }
+            -- {
+                continue
+            }
+            default {
+                puts stderr "invalid option: $arg"
+                exit 1
+            }
+        }
     }
 
     if {$config(verbose) > 0} {
-	puts "i8kmon"
-	parray config
-	parray status
+        puts "i8kmon"
+        parray config
+        parray status
     }
 }
 
 proc probe_fan_speed {} {
-    global status
     global config
+    global status
 
-    if {$status(leftspeed) != {} || $status(rightspeed) != {}} {
-	return
-    }
+    if {$status(leftspeed) != {} || $status(rightspeed) != {}} {return}
 
     exec $config(i8kfan) 1 1
-    after 1000
+    after 5000
     set speeds [eval exec "i8kctl speed"]
     set lspeed1 [lindex $speeds 0]
     set rspeed1 [lindex $speeds 1]
 
     exec $config(i8kfan) 2 2
-    after 1000
+    after 5000
     set speeds [eval exec "i8kctl speed"]
     set lspeed2 [lindex $speeds 0]
     set rspeed2 [lindex $speeds 1]
 
     exec $config(i8kfan) 3 3
-    after 1000
+    after 5000
     set speeds [eval exec "i8kctl speed"]
     set lspeed3 [lindex $speeds 0]
     set rspeed3 [lindex $speeds 1]
@@ -333,23 +331,21 @@ proc probe_fan_speed {} {
     set status(leftspeed) "0 $lspeed1 $lspeed2 $lspeed3"
     set status(rightspeed) "0 $rspeed1 $rspeed2 $rspeed3"
 
-    if {$config(verbose) > 1} {
-	puts "Probed fan speeds are left=$status(leftspeed), right=status(rightspeed)"
+    if {$config(verbose) > 0} {
+        puts "Probed fan speeds are left=$status(leftspeed), right=status(rightspeed)"
     }
 }
 
-# probe external tools
+# Probe external tools
 proc probe_tools {} {
-    # The possibility of choosing 'acpi' or 'acpitool' is for compatibility
-    # between different architectures: amd64, i386, kFreeBSD
-    # This code below is strictly related on package dependency stated at
-    # keyword 'Depends:' on file 'debian/control'
+    # The possibility of choosing 'acpi' or 'acpitool' is for compatibility between different architectures: amd64, i386, kFreeBSD.
+    # This code below is strictly related on package dependency stated at keyword 'Depends:' on file 'debian/control'.
     if {![catch {exec acpi}]} {
         set config(acpi) "acpi"
     } elseif {[catch {exec acpitool}]} {
         set config(acpi) "acpitool"
     } else {
-        puts stderr "Package dependency problem: neither 'acpi' nor 'acpitool' package is installed"
+        puts stderr "Package dependency problem: neither 'acpi' nor 'acpitool' package is installed."
     }
 }
 
