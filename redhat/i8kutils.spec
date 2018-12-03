@@ -6,6 +6,7 @@ License: GPLv2+
 Group: Applications/System/Configuration/Hardware
 Source: {{{ git_pack }}}
 URL: https://launchpad.net/i8kutils
+BuildRequires: gcc systemd
 Requires: ld-linux.so.2 libc.so.6 systemd
 Provides: %{name}-%{version}-%{release}
 
