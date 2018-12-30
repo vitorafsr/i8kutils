@@ -27,7 +27,7 @@ struct t_cfg
 void set_default_cfg()
 {
     cfg.verbose = 0;
-    cfg.period = 100;
+    cfg.period = 500;
     cfg.jump_timeout = 2000;
     cfg.jump_temp_delta = 5;
     cfg.t_low = 45;
@@ -35,15 +35,15 @@ void set_default_cfg()
     cfg.t_high = 80;
 }
 
-int i8k_set_fan_status(int fan, int status)
+int i8k_set_fan_state(int fan, int state)
 {
-    int args[2] = {fan, status}, rc;
+    int args[2] = {fan, state}, rc;
     if ((rc = ioctl(i8k_fd, I8K_SET_FAN, &args)) < 0)
         return rc;
     return args[0];
 }
 
-int i8k_get_fan_status(int fan)
+int i8k_get_fan_state(int fan)
 {
     int args[1] = {fan}, rc;
     if ((rc = ioctl(i8k_fd, I8K_GET_FAN, &args)) < 0)
@@ -72,14 +72,17 @@ void monitor()
     while (1)
     {
         int temp = i8k_get_cpu_temp();
-        int fan_left = i8k_get_fan_status(I8K_FAN_LEFT);
-        int fan_right = i8k_get_fan_status(I8K_FAN_RIGHT);
+        int fan_left = i8k_get_fan_state(I8K_FAN_LEFT);
+        int fan_right = i8k_get_fan_state(I8K_FAN_RIGHT);
         if (temp - temp_prev > cfg.jump_temp_delta && skip_once == 0)
         {
             if (cfg.verbose)
+            {
                 printf("  %d   ", temp);
+                fflush(stdout);
+            }
             skip_once = 1;
-            fflush(stdout);
+
             usleep(cfg.jump_timeout * 1000);
             continue;
         }
@@ -97,14 +100,15 @@ void monitor()
 
         if (fan != fan_left || fan != fan_right)
         {
-            i8k_set_fan_status(I8K_FAN_LEFT, fan);
-            i8k_set_fan_status(I8K_FAN_RIGHT, fan);
+            i8k_set_fan_state(I8K_FAN_LEFT, fan);
+            i8k_set_fan_state(I8K_FAN_RIGHT, fan);
             if (cfg.verbose)
                 printf(" --%d-- ", fan);
         }
         temp_prev = temp;
         skip_once = 0;
-        fflush(stdout);
+        if (cfg.verbose)
+            fflush(stdout);
         usleep(cfg.period * 1000);
     }
 }

@@ -33,3 +33,7 @@ probe_i8k_calls_time: i8kctl_DLIB.o probe_i8k_calls_time.c
 
 clean:
 	rm -f i8kctl i8kmon-ng probe_i8k_calls_time *.o
+
+install:
+	install ./i8kctl /usr/bin/
+	install ./i8kmon-ng /usr/bin/
