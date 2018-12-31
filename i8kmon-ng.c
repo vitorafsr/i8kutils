@@ -1,10 +1,25 @@
+/*
+ * i8kmon-ng.c -- Temp & fan monitor & control using i8k kernel module on Dell laptops 
+ * Copyright (C) 2018-2019 https://github.com/ru-ace
+ * Copyright (C) 2013-2017 Vitor Augusto <vitorafsr@gmail.com>
+ * Copyright (C) 2001  Massimo Dal Zotto <dz@debian.org>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2, or (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -27,7 +42,7 @@ struct t_cfg
 void set_default_cfg()
 {
     cfg.verbose = 0;
-    cfg.period = 500;
+    cfg.period = 1000;
     cfg.jump_timeout = 2000;
     cfg.jump_temp_delta = 5;
     cfg.t_low = 45;
@@ -112,15 +127,90 @@ void monitor()
         usleep(cfg.period * 1000);
     }
 }
+void load_cfg()
+{
+    if (access(CFG_FILE, F_OK) == -1)
+        return;
+    FILE *fh;
+    if ((fh = fopen(CFG_FILE, "r")) == NULL)
+        return;
+    char *str = malloc(256);
+    while (!feof(fh))
+        if (fgets(str, 254, fh))
+        {
+            char *pos = strstr(str, "\n");
+            pos[0] = '\0';
+            //printf("%s: [%s]\n", CFG_FILE, str);
+            if (str[0] == '#' || str[0] == ';' || str[0] == '\0' || isspace(str[0]))
+                continue;
+            pos = str;
+            while (!isspace(pos[0]) && pos[0] != '\0')
+                pos++;
+            if (pos[0] == '\0')
+            {
+                cfg_error(str);
+                return;
+            }
+
+            pos[0] = '\0';
+            pos++;
+            while (!isdigit(pos[0]) && pos[0] != '\0')
+                pos++;
+
+            if (pos[0] == '\0')
+            {
+                cfg_error(str);
+                return;
+            }
+            int value = atoi(pos);
+            set_cfg(str, value);
+        }
+
+    free(str);
+    fclose(fh);
+}
+
+void cfg_error(char *str)
+{
+    printf("Config error in line [%s]\n", str);
+}
+
+void set_cfg(char *key, int value)
+{
+    if (cfg.verbose)
+        printf("%s: %s = %d\n", CFG_FILE, key, value);
+
+    if (strcmp(key, "verbose") == 0)
+        cfg.verbose = value;
+    else if (strcmp(key, "period") == 0)
+        cfg.period = value;
+    else if (strcmp(key, "jump_timeout") == 0)
+        cfg.jump_timeout = value;
+    else if (strcmp(key, "jump_temp_delta") == 0)
+        cfg.jump_temp_delta = value;
+    else if (strcmp(key, "t_low") == 0)
+        cfg.t_low = value;
+    else if (strcmp(key, "t_mid") == 0)
+        cfg.t_mid = value;
+    else if (strcmp(key, "t_high") == 0)
+        cfg.t_high = value;
+    else
+        printf("Unknown param %s\n", key);
+}
 
 int main(int argc, char **argv)
 {
-    if (argc >= 2)
+    set_default_cfg();
+    if (argc > 1)
     {
         if ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0))
         {
             usage();
             exit(0);
+        }
+        else if ((strcmp(argv[1], "-v") == 0) || (strcmp(argv[1], "--verbose") == 0))
+        {
+            cfg.verbose = 1;
         }
     }
 
@@ -130,7 +220,8 @@ int main(int argc, char **argv)
         perror("can't open " I8K_PROC);
         exit(-1);
     }
-    set_default_cfg();
+
+    load_cfg();
 
     monitor();
 }
