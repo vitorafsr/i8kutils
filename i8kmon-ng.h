@@ -4,6 +4,13 @@
 
 #define CFG_FILE "/etc/i8kmon-ng.conf"
 
+#define I8K_PROC "/proc/i8k"
+#define I8K_FAN_LEFT 1
+#define I8K_FAN_RIGHT 0
+#define I8K_GET_TEMP _IOR('i', 0x84, size_t)
+#define I8K_GET_FAN _IOWR('i', 0x86, size_t)
+#define I8K_SET_FAN _IOWR('i', 0x87, size_t)
+
 void set_default_cfg();
 int i8k_set_fan_status(int, int);
 int i8k_get_fan_status(int);

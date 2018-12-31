@@ -1,8 +1,6 @@
 /*
- * i8kmon-ng.c -- Temp & fan monitor & control using i8k kernel module on Dell laptops 
- * Copyright (C) 2018-2019 https://github.com/ru-ace
- * Copyright (C) 2013-2017 Vitor Augusto <vitorafsr@gmail.com>
- * Copyright (C) 2001  Massimo Dal Zotto <dz@debian.org>
+ * i8kmon-ng.c -- Fan monitor and control using i8k kernel module on Dell laptops.
+ * Copyright (C) 2019 https://github.com/ru-ace
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -23,10 +21,9 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#include "i8k.h"
 #include "i8kmon-ng.h"
 
-static int i8k_fd;
+int i8k_fd;
 
 struct t_cfg
 {
@@ -50,28 +47,31 @@ void set_default_cfg()
     cfg.t_high = 80;
 }
 
-int i8k_set_fan_state(int fan, int state)
+void i8k_set_fan_state(int fan, int state)
 {
-    int args[2] = {fan, state}, rc;
-    if ((rc = ioctl(i8k_fd, I8K_SET_FAN, &args)) < 0)
-        return rc;
-    return args[0];
+    int args[2] = {fan, state};
+    if (ioctl(i8k_fd, I8K_SET_FAN, &args) != 0)
+    {
+        perror("i8k_set_fan_state ioctl error");
+        exit(-1);
+    }
 }
-
 int i8k_get_fan_state(int fan)
 {
-    int args[1] = {fan}, rc;
-    if ((rc = ioctl(i8k_fd, I8K_GET_FAN, &args)) < 0)
-        return rc;
-    return args[0];
+    int args[1] = {fan};
+    if (ioctl(i8k_fd, I8K_GET_FAN, &args) == 0)
+        return args[0];
+    perror("i8k_get_fan_state ioctl error");
+    exit(-1);
 }
 
 int i8k_get_cpu_temp()
 {
-    int args[1], rc;
-    if ((rc = ioctl(i8k_fd, I8K_GET_TEMP, &args)) < 0)
-        return rc;
-    return args[0];
+    int args[1];
+    if (ioctl(i8k_fd, I8K_GET_TEMP, &args) == 0)
+        return args[0];
+    perror("i8k_get_cpu_temp ioctl error");
+    exit(-1);
 }
 
 void monitor()
@@ -196,7 +196,9 @@ void set_cfg(char *key, int value)
 
 void usage()
 {
-    puts("i8kmon-ng v0.9 https://github.com/ru-ace\n");
+    puts("i8kmon-ng v0.9 by https://github.com/ru-ace");
+    puts("Fan monitor and control using i8k kernel module on Dell laptops.\n");
+
     puts("Usage: i8kmon-ng [OPTIONS]");
     puts("  -h  Show this help");
     puts("  -v  Verbose mode");
@@ -207,6 +209,7 @@ void usage()
     puts("  --t_low value");
     puts("  --t_mid value");
     puts("  --t_high value");
+    puts("");
 }
 void parse_args(int argc, char **argv)
 {
@@ -249,25 +252,11 @@ int main(int argc, char **argv)
     set_default_cfg();
     load_cfg();
     parse_args(argc, argv);
-    if (argc > 1)
-    {
-        if ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0))
-        {
-            usage();
-            exit(0);
-        }
-        else if ((strcmp(argv[1], "-v") == 0) || (strcmp(argv[1], "--verbose") == 0))
-        {
-            cfg.verbose = 1;
-        }
-    }
-
     i8k_fd = open(I8K_PROC, O_RDONLY);
     if (i8k_fd < 0)
     {
         perror("can't open " I8K_PROC);
         exit(-1);
     }
-
     monitor();
 }
