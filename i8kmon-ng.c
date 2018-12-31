@@ -74,10 +74,6 @@ int i8k_get_cpu_temp()
     return args[0];
 }
 
-void usage()
-{
-}
-
 void monitor()
 {
     int fan = 0;
@@ -178,7 +174,7 @@ void cfg_error(char *str)
 void set_cfg(char *key, int value)
 {
     if (cfg.verbose)
-        printf("%s: %s = %d\n", CFG_FILE, key, value);
+        printf("%s = %d\n", key, value);
 
     if (strcmp(key, "verbose") == 0)
         cfg.verbose = value;
@@ -198,9 +194,61 @@ void set_cfg(char *key, int value)
         printf("Unknown param %s\n", key);
 }
 
+void usage()
+{
+    puts("i8kmon-ng v0.9 https://github.com/ru-ace\n");
+    puts("Usage: i8kmon-ng [OPTIONS]");
+    puts("  -h  Show this help");
+    puts("  -v  Verbose mode");
+    printf("Params(see %s to explains):\n", CFG_FILE);
+    puts("  --period value");
+    puts("  --jump_timeout value");
+    puts("  --jump_temp_delta value");
+    puts("  --t_low value");
+    puts("  --t_mid value");
+    puts("  --t_high value");
+}
+void parse_args(int argc, char **argv)
+{
+    for (int i = 1; i < argc; i++)
+    {
+        if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--help") == 0))
+        {
+            usage();
+            exit(0);
+        }
+        else if ((strcmp(argv[i], "-v") == 0) || (strcmp(argv[i], "--verbose") == 0))
+        {
+            cfg.verbose = 1;
+        }
+        else if (argv[i][0] == '-' && argv[i][1] == '-')
+        {
+            char *key = argv[i];
+            key += 2;
+            i++;
+            if (i == argc || !isdigit(argv[i][0]))
+            {
+                printf("Param %s need value\n", key);
+                break;
+            }
+            else
+            {
+                int value = atoi(argv[i]);
+                set_cfg(key, value);
+            }
+        }
+        else
+        {
+            printf("Unknown param %s\n", argv[i]);
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     set_default_cfg();
+    load_cfg();
+    parse_args(argc, argv);
     if (argc > 1)
     {
         if ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0))
@@ -220,8 +268,6 @@ int main(int argc, char **argv)
         perror("can't open " I8K_PROC);
         exit(-1);
     }
-
-    load_cfg();
 
     monitor();
 }
