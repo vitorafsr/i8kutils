@@ -247,16 +247,21 @@ void parse_args(int argc, char **argv)
     }
 }
 
-int main(int argc, char **argv)
+void open_i8k()
 {
-    set_default_cfg();
-    load_cfg();
-    parse_args(argc, argv);
     i8k_fd = open(I8K_PROC, O_RDONLY);
     if (i8k_fd < 0)
     {
         perror("can't open " I8K_PROC);
         exit(-1);
     }
+}
+
+int main(int argc, char **argv)
+{
+    set_default_cfg();
+    load_cfg();
+    parse_args(argc, argv);
+    open_i8k();
     monitor();
 }

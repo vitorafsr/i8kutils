@@ -12,11 +12,14 @@
 #define I8K_SET_FAN _IOWR('i', 0x87, size_t)
 
 void set_default_cfg();
-int i8k_set_fan_status(int, int);
+void i8k_set_fan_status(int, int);
 int i8k_get_fan_status(int);
 int i8k_get_cpu_temp();
 void usage();
 void monitor();
-void cfg_error(char *);
+void load_cfg();
 void set_cfg(char *, int);
+void cfg_error(char *);
+void parse_args(int, char **);
+void open_i8k();
 #endif
