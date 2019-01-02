@@ -34,17 +34,21 @@ struct t_cfg
     int t_low;
     int t_mid;
     int t_high;
+    int foolproof_checks;
+    int daemon;
 } cfg;
 
 void set_default_cfg()
 {
-    cfg.verbose = 0;
+    cfg.verbose = false;
     cfg.period = 1000;
     cfg.jump_timeout = 2000;
     cfg.jump_temp_delta = 5;
     cfg.t_low = 45;
     cfg.t_mid = 60;
     cfg.t_high = 80;
+    cfg.foolproof_checks = true;
+    cfg.daemon = false;
 }
 
 void i8k_set_fan_state(int fan, int state)
@@ -53,7 +57,7 @@ void i8k_set_fan_state(int fan, int state)
     if (ioctl(i8k_fd, I8K_SET_FAN, &args) != 0)
     {
         perror("i8k_set_fan_state ioctl error");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 }
 int i8k_get_fan_state(int fan)
@@ -62,7 +66,7 @@ int i8k_get_fan_state(int fan)
     if (ioctl(i8k_fd, I8K_GET_FAN, &args) == 0)
         return args[0];
     perror("i8k_get_fan_state ioctl error");
-    exit(-1);
+    exit(EXIT_FAILURE);
 }
 
 int i8k_get_cpu_temp()
@@ -71,12 +75,12 @@ int i8k_get_cpu_temp()
     if (ioctl(i8k_fd, I8K_GET_TEMP, &args) == 0)
         return args[0];
     perror("i8k_get_cpu_temp ioctl error");
-    exit(-1);
+    exit(EXIT_FAILURE);
 }
 
 void monitor()
 {
-    int fan = 0;
+    int fan = I8K_FAN_OFF;
     int temp_prev = i8k_get_cpu_temp();
     int skip_once = 0;
 
@@ -103,11 +107,11 @@ void monitor()
                 printf("%d/%d/%d ", temp, fan_left, fan_right);
         }
         if (temp <= cfg.t_low)
-            fan = 0;
+            fan = I8K_FAN_OFF;
         else if (temp > cfg.t_high)
-            fan = 2;
+            fan = I8K_FAN_HIGH;
         else if (temp >= cfg.t_mid)
-            fan = fan == 2 ? 2 : 1;
+            fan = fan == I8K_FAN_HIGH ? fan : I8K_FAN_LOW;
 
         if (fan != fan_left || fan != fan_right)
         {
@@ -122,6 +126,35 @@ void monitor()
             fflush(stdout);
         usleep(cfg.period * 1000);
     }
+}
+
+void foolproof_checks()
+{
+    int check_failed = false;
+    check_failed += (cfg.t_low < 30) ? foolproof_error("t_low >= 30") : false;
+    check_failed += (cfg.t_high > 90) ? foolproof_error("t_high <= 90") : false;
+    check_failed += (cfg.t_low < cfg.t_mid && cfg.t_mid < cfg.t_high) ? false : foolproof_error("thresholds t_low < t_mid < t_high");
+    check_failed += (cfg.period < 100 || cfg.period > 5000) ? foolproof_error("period in [100,5000]") : false;
+    check_failed += (cfg.jump_timeout < 100 || cfg.jump_timeout > 5000) ? foolproof_error("jump_timeout in [100,5000]") : false;
+    check_failed += (cfg.jump_temp_delta < 2) ? foolproof_error("jump_temp_delta > 2") : false;
+    if (check_failed)
+    {
+        printf("foolproof_checks() was failed.\nIf you are sure what you do, checks can be disable using \"--foolproof_checks 0\" in command line or add \"foolproof_checks 0\" in %s\n", CFG_FILE);
+        exit_failure();
+    }
+}
+
+int foolproof_error(char *str)
+{
+    printf("foolproof_checks(): awaiting %s\n", str);
+    return true;
+}
+
+void exit_failure()
+{
+    i8k_set_fan_state(I8K_FAN_LEFT, I8K_FAN_HIGH);
+    i8k_set_fan_state(I8K_FAN_RIGHT, I8K_FAN_HIGH);
+    exit(EXIT_FAILURE);
 }
 void load_cfg()
 {
@@ -142,11 +175,9 @@ void load_cfg()
             pos = str;
             while (!isspace(pos[0]) && pos[0] != '\0')
                 pos++;
+
             if (pos[0] == '\0')
-            {
                 cfg_error(str);
-                return;
-            }
 
             pos[0] = '\0';
             pos++;
@@ -154,10 +185,8 @@ void load_cfg()
                 pos++;
 
             if (pos[0] == '\0')
-            {
                 cfg_error(str);
-                return;
-            }
+
             int value = atoi(pos);
             set_cfg(str, value);
         }
@@ -169,15 +198,15 @@ void load_cfg()
 void cfg_error(char *str)
 {
     printf("Config error in line [%s]\n", str);
+    exit_failure();
 }
 
 void set_cfg(char *key, int value)
 {
     if (cfg.verbose)
         printf("%s = %d\n", key, value);
-
-    if (strcmp(key, "verbose") == 0)
-        cfg.verbose = value;
+    if (strcmp(key, "daemon") == 0)
+        cfg.daemon = value;
     else if (strcmp(key, "period") == 0)
         cfg.period = value;
     else if (strcmp(key, "jump_timeout") == 0)
@@ -190,8 +219,13 @@ void set_cfg(char *key, int value)
         cfg.t_mid = value;
     else if (strcmp(key, "t_high") == 0)
         cfg.t_high = value;
+    else if (strcmp(key, "foolproof_checks") == 0)
+        cfg.foolproof_checks = value;
     else
+    {
         printf("Unknown param %s\n", key);
+        exit_failure();
+    }
 }
 
 void usage()
@@ -202,13 +236,14 @@ void usage()
     puts("Usage: i8kmon-ng [OPTIONS]");
     puts("  -h  Show this help");
     puts("  -v  Verbose mode");
-    printf("Params(see %s to explains):\n", CFG_FILE);
-    puts("  --period value");
-    puts("  --jump_timeout value");
-    puts("  --jump_temp_delta value");
-    puts("  --t_low value");
-    puts("  --t_mid value");
-    puts("  --t_high value");
+    puts("  -d  Daemon mode (detach from console)");
+    printf("Params(see %s for explains):\n", CFG_FILE);
+    printf("  --period MILLISECONDS         (default: %ld ms)\n", cfg.period);
+    printf("  --jump_timeout MILLISECONDS   (default: %ld ms)\n", cfg.jump_timeout);
+    printf("  --jump_temp_delta CELSIUS     (default: %d°)\n", cfg.jump_temp_delta);
+    printf("  --t_low CELSIUS               (default: %d°)\n", cfg.t_low);
+    printf("  --t_mid CELSIUS               (default: %d°)\n", cfg.t_mid);
+    printf("  --t_high CELSIUS              (default: %d°)\n", cfg.t_high);
     puts("");
 }
 void parse_args(int argc, char **argv)
@@ -218,11 +253,15 @@ void parse_args(int argc, char **argv)
         if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--help") == 0))
         {
             usage();
-            exit(0);
+            exit(EXIT_SUCCESS);
         }
         else if ((strcmp(argv[i], "-v") == 0) || (strcmp(argv[i], "--verbose") == 0))
         {
-            cfg.verbose = 1;
+            cfg.verbose = true;
+        }
+        else if ((strcmp(argv[i], "-d") == 0) || (strcmp(argv[i], "--daemon") == 0))
+        {
+            cfg.daemon = true;
         }
         else if (argv[i][0] == '-' && argv[i][1] == '-')
         {
@@ -243,8 +282,25 @@ void parse_args(int argc, char **argv)
         else
         {
             printf("Unknown param %s\n", argv[i]);
+            exit_failure();
         }
     }
+}
+
+void daemonize()
+{
+    cfg.verbose = false;
+
+    int pid = fork();
+    if (pid == -1) //failure
+    {
+        perror("can't fork()");
+        exit_failure();
+    }
+    else if (pid == 0) //child
+        cfg.verbose = false;
+    else //parent
+        exit(EXIT_SUCCESS);
 }
 
 void open_i8k()
@@ -253,15 +309,20 @@ void open_i8k()
     if (i8k_fd < 0)
     {
         perror("can't open " I8K_PROC);
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 }
 
 int main(int argc, char **argv)
 {
+    open_i8k();
     set_default_cfg();
     load_cfg();
     parse_args(argc, argv);
-    open_i8k();
+
+    if (cfg.foolproof_checks)
+        foolproof_checks();
+    if (cfg.daemon)
+        daemonize();
     monitor();
 }

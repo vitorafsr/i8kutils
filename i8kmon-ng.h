@@ -7,9 +7,20 @@
 #define I8K_PROC "/proc/i8k"
 #define I8K_FAN_LEFT 1
 #define I8K_FAN_RIGHT 0
+
+#define I8K_FAN_OFF 0
+#define I8K_FAN_LOW 1
+#define I8K_FAN_HIGH 2
+
 #define I8K_GET_TEMP _IOR('i', 0x84, size_t)
 #define I8K_GET_FAN _IOWR('i', 0x86, size_t)
 #define I8K_SET_FAN _IOWR('i', 0x87, size_t)
+
+#define true 1
+#define false 0
+
+#define EXIT_SUCCESS 0
+#define EXIT_FAILURE 1
 
 void set_default_cfg();
 void i8k_set_fan_status(int, int);
@@ -22,4 +33,7 @@ void set_cfg(char *, int);
 void cfg_error(char *);
 void parse_args(int, char **);
 void open_i8k();
+void exit_failure();
+int foolproof_error(char *);
+void foolproof_checks();
 #endif
