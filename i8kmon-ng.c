@@ -2,7 +2,7 @@
  * i8kmon-ng.c -- Fan monitor and control using i8k kernel module on Dell laptops.
  * Copyright (C) 2019 https://github.com/ru-ace
  * Using code for get/set temp/fan_states from https://github.com/vitorafsr/i8kutils
- * Using code for enable/disable bios fan control from https://github.com/TomFreudenberg/dell-bios-fan-control
+ * Using code for enable/disable bios fan control from https://github.com/clopez/dellfan
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -37,7 +37,7 @@ struct t_cfg cfg = {
     .t_high = 80,
     .foolproof_checks = true,
     .daemon = false,
-    .bios_disable_version = 0,
+    .bios_disable_method = 0,
     .monitor_only = false,
 };
 
@@ -84,19 +84,19 @@ int i8k_get_cpu_temp()
 }
 //i8kctl end
 
-// dell-bios-fan-control start
+// dell-fan start
 void init_ioperm()
 {
     if (ioperm(0xb2, 4, 1))
     {
         perror("init_ioperm");
-        cfg.bios_disable_version = 0;
+        cfg.bios_disable_method = 0;
         exit_failure();
     }
     if (ioperm(0x84, 4, 1))
     {
         perror("init_ioperm");
-        cfg.bios_disable_version = 0;
+        cfg.bios_disable_method = 0;
         exit_failure();
     }
 }
@@ -157,19 +157,19 @@ void bios_fan_control(int enable)
 {
     if (geteuid() != 0)
     {
-        printf("For using \"bios_disable_version\" you need root privileges\n");
-        cfg.bios_disable_version = 0;
+        printf("For using \"bios_disable_method\" you need root privileges\n");
+        cfg.bios_disable_method = 0;
         exit_failure();
     }
     init_ioperm();
-    if (cfg.bios_disable_version == 1)
+    if (cfg.bios_disable_method == 1)
     {
         if (enable)
             send_smm(ENABLE_BIOS_METHOD1, 0);
         else
             send_smm(DISABLE_BIOS_METHOD1, 0);
     }
-    else if (cfg.bios_disable_version == 2)
+    else if (cfg.bios_disable_method == 2)
     {
         if (enable)
             send_smm(ENABLE_BIOS_METHOD2, 0);
@@ -178,11 +178,11 @@ void bios_fan_control(int enable)
     }
     else
     {
-        printf("bios_disable_version can be 0 (dont try disable bios), 1 or 2");
+        printf("bios_disable_method can be 0 (dont try disable bios), 1 or 2");
         exit_failure();
     }
 }
-// dell-bios-fan-control end
+// dell-fan end
 
 // i8kmon-ng start
 void monitor()
@@ -200,7 +200,7 @@ void monitor()
         printf("  t_low                 %d°\n", cfg.t_low);
         printf("  t_mid                 %d°\n", cfg.t_mid);
         printf("  t_high                %d°\n", cfg.t_high);
-        printf("  bios_disable_version  %d\n", cfg.bios_disable_version);
+        printf("  bios_disable_method  %d\n", cfg.bios_disable_method);
         puts("Legend:");
         puts("  [TT/L/R] Monitor(no action). TT - CPU temp, L - left fan state, R - right fan state");
         puts("  [ --F--] Set fans state to F. F - fan state 0 = OFF, 1 = LOW, 2 = HIGH.");
@@ -265,7 +265,7 @@ void foolproof_checks()
     check_failed += (cfg.period < 100 || cfg.period > 5000) ? foolproof_error("period in [100,5000]") : false;
     check_failed += (cfg.jump_timeout < 100 || cfg.jump_timeout > 5000) ? foolproof_error("jump_timeout in [100,5000]") : false;
     check_failed += (cfg.jump_temp_delta < 2) ? foolproof_error("jump_temp_delta > 2") : false;
-    check_failed += (cfg.bios_disable_version < 0 || cfg.bios_disable_version > 2) ? foolproof_error("bios_disable_version in [0,2]") : false;
+    check_failed += (cfg.bios_disable_method < 0 || cfg.bios_disable_method > 2) ? foolproof_error("bios_disable_method in [0,2]") : false;
 
     if (check_failed)
     {
@@ -284,7 +284,7 @@ void exit_failure()
 {
     i8k_set_fan_state(I8K_FAN_LEFT, I8K_FAN_HIGH);
     i8k_set_fan_state(I8K_FAN_RIGHT, I8K_FAN_HIGH);
-    if (cfg.bios_disable_version == 1 || cfg.bios_disable_version == 2)
+    if (cfg.bios_disable_method == 1 || cfg.bios_disable_method == 2)
         bios_fan_control(true);
     exit(EXIT_FAILURE);
 }
@@ -359,8 +359,8 @@ void cfg_set(char *key, int value, int line_id)
         cfg.t_high = value;
     else if (strcmp(key, "foolproof_checks") == 0)
         cfg.foolproof_checks = value;
-    else if (strcmp(key, "bios_disable_version") == 0)
-        cfg.bios_disable_version = value;
+    else if (strcmp(key, "bios_disable_method") == 0)
+        cfg.bios_disable_method = value;
     else
     {
         if (line_id > 0)
@@ -383,13 +383,13 @@ void usage()
     puts("  -d  Daemon mode (detach from console)");
     puts("  -m  No control - monitor only (useful to monitor daemon working)");
     printf("Args(see %s for explains):\n", CFG_FILE);
-    printf("  --period MILLISECONDS             (default: %ld ms)\n", cfg.period);
-    printf("  --jump_timeout MILLISECONDS       (default: %ld ms)\n", cfg.jump_timeout);
-    printf("  --jump_temp_delta CELSIUS         (default: %d°)\n", cfg.jump_temp_delta);
-    printf("  --t_low CELSIUS                   (default: %d°)\n", cfg.t_low);
-    printf("  --t_mid CELSIUS                   (default: %d°)\n", cfg.t_mid);
-    printf("  --t_high CELSIUS                  (default: %d°)\n", cfg.t_high);
-    printf("  --bios_disable_version VERSION    (default: %d)\n", cfg.bios_disable_version);
+    printf("  --period MILLISECONDS         (default: %ld ms)\n", cfg.period);
+    printf("  --jump_timeout MILLISECONDS   (default: %ld ms)\n", cfg.jump_timeout);
+    printf("  --jump_temp_delta CELSIUS     (default: %d°)\n", cfg.jump_temp_delta);
+    printf("  --t_low CELSIUS               (default: %d°)\n", cfg.t_low);
+    printf("  --t_mid CELSIUS               (default: %d°)\n", cfg.t_mid);
+    printf("  --t_high CELSIUS              (default: %d°)\n", cfg.t_high);
+    printf("  --bios_disable_method METHOD  (default: %d)\n", cfg.bios_disable_method);
 
     puts("");
 }
@@ -489,7 +489,7 @@ int main(int argc, char **argv)
     signal_handler_init();
     if (cfg.foolproof_checks)
         foolproof_checks();
-    if (cfg.bios_disable_version && !cfg.monitor_only)
+    if (cfg.bios_disable_method && !cfg.monitor_only)
         bios_fan_control(false);
     if (cfg.daemon && !cfg.monitor_only)
         daemonize();

@@ -2,7 +2,7 @@
 #ifndef _I8KMON_NG_H
 #define _I8KMON_NG_H
 
-// dell-bios-fan-control start
+// dell-fan start
 #define DISABLE_BIOS_METHOD1 0x30a3
 #define ENABLE_BIOS_METHOD1 0x31a3
 #define DISABLE_BIOS_METHOD2 0x34a3
@@ -21,7 +21,7 @@ void bios_fan_control(int);
 void init_ioperm();
 int i8k_smm(struct smm_regs *);
 int send_smm(unsigned int, unsigned int);
-// dell-bios-fan-control end
+// dell-fan end
 
 #define CFG_FILE "/etc/i8kmon-ng.conf"
 
@@ -60,7 +60,7 @@ struct t_cfg
     int t_high;
     int foolproof_checks;
     int daemon;
-    int bios_disable_version;
+    int bios_disable_method;
     int monitor_only;
 };
 
