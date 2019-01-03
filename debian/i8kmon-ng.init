@@ -1,0 +1,59 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          i8kmon-ng
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Should-Start:      $local_fs
+# Should-Stop:       $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Fan monitor and control using i8k kernel module on Dell laptops.
+# Description:       Enable service provided by daemon
+### END INIT INFO
+
+# i8kmon-ng	Fan monitor and control using i8k kernel module on Dell laptops.
+#
+#		Written by https://github.com/ru-ace
+
+
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+. /lib/lsb/init-functions
+
+NAME=i8kmon-ng
+DAEMON=/usr/bin/i8kmon-ng
+PROC_I8K=/proc/i8k
+DESC="Fan control for Dell laptops"
+I8KMON_NG_ARGS=""
+PIDFILE=/var/run/$NAME.pid
+
+test -x $DAEMON || (log_failure_msg "Could not find $DAEMON."; exit 5)
+
+case "$1" in
+	start)
+		log_success_msg "Starting $DESC" "$NAME"
+		if [ ! -f "$PROC_I8K" ]; then
+			log_failure_msg "Could not find $PROC_I8K."
+			exit 1
+		fi
+		start-stop-daemon --start --quiet --pidfile $PIDFILE \
+			--background --make-pidfile --startas $DAEMON -- $I8KMON_NG_ARGS
+		;;
+	stop)
+		log_success_msg "Stopping $DESC" "$NAME"
+		start-stop-daemon --oknodo --stop --quiet --pidfile $PIDFILE
+		rm -f $PIDFILE
+		;;
+	status)
+		status_of_proc -p $PIDFILE $DAEMON $NAME
+		;;
+	restart|reload|force-reload)
+		$0 stop && sleep 2 && $0 start
+		;;
+	*)
+		echo "Usage: $0 {start|stop|status|restart|reload|force-reload}" >&2
+	    exit 2
+		;;
+esac
