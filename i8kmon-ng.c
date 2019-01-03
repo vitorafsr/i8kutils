@@ -84,7 +84,7 @@ int i8k_get_cpu_temp()
 }
 //i8kctl end
 
-// dell-fan start
+// dellfan start
 void init_ioperm()
 {
     if (ioperm(0xb2, 4, 1))
@@ -147,8 +147,8 @@ int send_smm(unsigned int cmd, unsigned int arg)
     int res = i8k_smm(&regs);
     if (cfg.verbose)
     {
-        printf("i8k_smm returns %d\n", res);
-        printf("send_smm returns %d\n", regs.eax);
+        printf("i8k_smm returns %#06x\n", res);
+        printf("send_smm returns %#06x\n", regs.eax);
     }
     return regs.eax;
 }
@@ -176,23 +176,32 @@ void bios_fan_control(int enable)
         else
             send_smm(DISABLE_BIOS_METHOD2, 0);
     }
+    else if (cfg.bios_disable_method == 3)
+    {
+        if (enable)
+            send_smm(ENABLE_BIOS_METHOD3, 0);
+        else
+            send_smm(DISABLE_BIOS_METHOD3, 0);
+    }
     else
     {
         printf("bios_disable_method can be 0 (dont try disable bios), 1 or 2");
         exit_failure();
     }
 }
-// dell-fan end
+// dellfan end
 
 // i8kmon-ng start
 void monitor()
 {
     int fan = I8K_FAN_OFF;
     int temp_prev = i8k_get_cpu_temp();
-    int skip_once = 0;
+    //int fan_left_prev = -2;
+    //int fan_right_prev = -2;
+
+    int ignore_current_temp = 0;
     if (cfg.verbose)
     {
-
         puts("Config:");
         printf("  period                %ld ms\n", cfg.period);
         printf("  jump_timeout          %ld ms\n", cfg.jump_timeout);
@@ -200,16 +209,18 @@ void monitor()
         printf("  t_low                 %d°\n", cfg.t_low);
         printf("  t_mid                 %d°\n", cfg.t_mid);
         printf("  t_high                %d°\n", cfg.t_high);
-        printf("  bios_disable_method  %d\n", cfg.bios_disable_method);
+        printf("  bios_disable_method   %d\n", cfg.bios_disable_method);
         puts("Legend:");
-        puts("  [TT/L/R] Monitor(no action). TT - CPU temp, L - left fan state, R - right fan state");
-        puts("  [ --F--] Set fans state to F. F - fan state 0 = OFF, 1 = LOW, 2 = HIGH.");
-        puts("  [  TT  ] Abnormal temp jump detected. Will wait for next value to make decision. TT - CPU temp. ");
+        puts("  [TT·LR] Monitor(current state). TT - CPU temp, L - left fan state, R - right fan state");
+        puts("  [--F--] Set fans state to F. Fan states: 0 = OFF, 1 = LOW, 2 = HIGH.");
+        puts("  [  TT ] Abnormal temp jump detected. TT - CPU temp. ");
+        puts("  [TT-LR] Monitor during abnormal temp jump (ignoring temp value).");
+
         puts("Monitor:");
     }
     if (cfg.monitor_only)
     {
-        puts("WARNING: working in monitor_only mode. No action will taken.");
+        puts("WARNING: working in monitor_only mode. No action will be taken.");
         fan = i8k_get_fan_state(I8K_FAN_LEFT);
     }
     while (1)
@@ -217,39 +228,53 @@ void monitor()
         int temp = i8k_get_cpu_temp();
         int fan_left = i8k_get_fan_state(I8K_FAN_LEFT);
         int fan_right = i8k_get_fan_state(I8K_FAN_RIGHT);
-        if (temp - temp_prev > cfg.jump_temp_delta && skip_once == 0)
+        if (temp - temp_prev > cfg.jump_temp_delta && !ignore_current_temp)
         {
+            ignore_current_temp = cfg.jump_timeout / cfg.period + 1;
             if (cfg.verbose)
-            {
-                printf("  %d   ", temp);
-                fflush(stdout);
-            }
-            skip_once = 1;
-
-            usleep(cfg.jump_timeout * 1000);
-            continue;
+                printf("  %d " MON_SPACE, temp);
         }
         else
         {
+            if (ignore_current_temp > 0)
+                ignore_current_temp--;
+
             if (cfg.verbose)
-                printf("%d/%d/%d ", temp, fan_left, fan_right);
+            {
+                if (ignore_current_temp)
+                    printf("%d-%d%d" MON_SPACE, temp, fan_left, fan_right);
+                else
+                {
+                    /*
+                    if (temp == temp_prev && fan_left == fan_left_prev && fan_right == fan_right_prev)
+                        printf(".");
+                    else
+                    */
+                    printf("%d·%d%d" MON_SPACE, temp, fan_left, fan_right);
+                }
+            }
         }
-        if (temp <= cfg.t_low)
-            fan = I8K_FAN_OFF;
-        else if (temp > cfg.t_high)
-            fan = I8K_FAN_HIGH;
-        else if (temp >= cfg.t_mid)
-            fan = fan == I8K_FAN_HIGH ? fan : I8K_FAN_LOW;
+
+        if (!ignore_current_temp)
+        {
+            if (temp <= cfg.t_low)
+                fan = I8K_FAN_OFF;
+            else if (temp > cfg.t_high)
+                fan = I8K_FAN_HIGH;
+            else if (temp >= cfg.t_mid)
+                fan = fan == I8K_FAN_HIGH ? fan : I8K_FAN_LOW;
+        }
 
         if (fan != fan_left || fan != fan_right)
         {
             i8k_set_fan_state(I8K_FAN_LEFT, fan);
             i8k_set_fan_state(I8K_FAN_RIGHT, fan);
             if (cfg.verbose)
-                printf(" --%d-- ", fan);
+                printf("--%d--" MON_SPACE, fan);
         }
         temp_prev = temp;
-        skip_once = 0;
+        //fan_left_prev = fan_left;
+        //fan_right_prev = fan_right;
         if (cfg.verbose)
             fflush(stdout);
         usleep(cfg.period * 1000);
@@ -284,7 +309,7 @@ void exit_failure()
 {
     i8k_set_fan_state(I8K_FAN_LEFT, I8K_FAN_HIGH);
     i8k_set_fan_state(I8K_FAN_RIGHT, I8K_FAN_HIGH);
-    if (cfg.bios_disable_method == 1 || cfg.bios_disable_method == 2)
+    if (cfg.bios_disable_method == 1 || cfg.bios_disable_method == 2 || cfg.bios_disable_method == 3)
         bios_fan_control(true);
     exit(EXIT_FAILURE);
 }

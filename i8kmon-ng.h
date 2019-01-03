@@ -2,11 +2,14 @@
 #ifndef _I8KMON_NG_H
 #define _I8KMON_NG_H
 
-// dell-fan start
+// dellfan start
 #define DISABLE_BIOS_METHOD1 0x30a3
 #define ENABLE_BIOS_METHOD1 0x31a3
 #define DISABLE_BIOS_METHOD2 0x34a3
 #define ENABLE_BIOS_METHOD2 0x35a3
+
+#define DISABLE_BIOS_METHOD3 0x32a3
+#define ENABLE_BIOS_METHOD3 0x33a3
 
 struct smm_regs
 {
@@ -21,9 +24,7 @@ void bios_fan_control(int);
 void init_ioperm();
 int i8k_smm(struct smm_regs *);
 int send_smm(unsigned int, unsigned int);
-// dell-fan end
-
-#define CFG_FILE "/etc/i8kmon-ng.conf"
+// dellfan end
 
 // i8kctl start
 #define I8K_PROC "/proc/i8k"
@@ -43,6 +44,9 @@ int i8k_get_cpu_temp();
 void i8k_open();
 // i8kctl end
 
+// i8kmon-ng
+#define CFG_FILE "/etc/i8kmon-ng.conf"
+#define MON_SPACE "  "
 #define true 1
 #define false 0
 
