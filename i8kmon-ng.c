@@ -223,47 +223,51 @@ void monitor()
 
     monitor_show_legend();
 
-    int fan = I8K_FAN_OFF;
-    int temp_prev = i8k_get_cpu_temp();
+    int temp = i8k_get_cpu_temp();
+    int temp_prev = temp;
 
+    int fan = I8K_FAN_OFF;
+    int real_fan_state = fan;
+
+    unsigned long tick = cfg.tick * 1000; // 100 ms
     int period_ticks = cfg.period / cfg.tick;
     int fan_check_period_ticks = cfg.fan_check_period / cfg.tick;
     int jump_timeout_ticks = cfg.jump_timeout / cfg.tick;
-    unsigned long tick = cfg.tick * 1000;
-
-    int ignore_current_temp = 0;
 
     int period_tick = 0;
     int fan_check_period_tick = 0;
-
-    int temp = temp_prev;
-    int real_fan_state = fan;
+    int ignore_current_temp = 0; // jump_timeout_tick
 
     int last_fan_set = -1;
 
     if (cfg.monitor_only)
     {
         puts("WARNING: working in monitor_only mode. No action will be taken.");
-        fan = i8k_get_fan_state(cfg.monitor_fan_id);
+        real_fan_state = i8k_get_fan_state(cfg.monitor_fan_id);
+        fan = real_fan_state;
     }
 
     while (1)
     {
-
         usleep(tick);
 
-        if (ignore_current_temp > 0)
-            ignore_current_temp--;
+        period_tick -= period_tick == 0 ? 0 : 1;
+        fan_check_period_tick -= fan_check_period_tick == 0 ? 0 : 1;
+        ignore_current_temp -= ignore_current_temp == 0 ? 0 : 1;
 
-        if (period_tick > 0)
-            period_tick--;
-
-        if (fan_check_period_tick)
-            fan_check_period_tick--;
-
-        if (period_tick && ignore_current_temp && fan_check_period_tick)
+        if (period_tick && fan_check_period_tick)
             continue;
 
+        // get real fan state
+        if (fan_check_period_tick == 0)
+        {
+            fan_check_period_tick = fan_check_period_ticks;
+            real_fan_state = i8k_get_fan_state(cfg.monitor_fan_id);
+            if (real_fan_state == last_fan_set)
+                last_fan_set = -1;
+        }
+
+        // get temp and use fan control logic
         if (period_tick == 0)
         {
             period_tick = period_ticks;
@@ -272,52 +276,43 @@ void monitor()
             {
                 temp_prev = temp;
                 temp = i8k_get_cpu_temp();
+                if (temp - temp_prev > cfg.jump_temp_delta)
+                    // abnormal temp jump detected
+                    ignore_current_temp = jump_timeout_ticks;
+                else
+                {
+                    // fan control logic
+                    if (temp <= cfg.t_low)
+                        fan = I8K_FAN_OFF;
+                    else if (temp > cfg.t_high)
+                        fan = I8K_FAN_HIGH;
+                    else if (temp >= cfg.t_mid)
+                        fan = fan == I8K_FAN_HIGH ? fan : I8K_FAN_LOW;
+                }
+            }
+            if (cfg.verbose)
+            {
+                if (ignore_current_temp)
+                    printf("¡%d!" MON_SPACE, temp);
+                else
+                    printf("%d·%d" MON_SPACE, temp, real_fan_state);
+
+                fflush(stdout);
             }
         }
 
-        if (fan_check_period_tick == 0)
-        {
-            real_fan_state = i8k_get_fan_state(cfg.monitor_fan_id);
-            if (real_fan_state == last_fan_set)
-                last_fan_set = -1;
-            fan_check_period_tick = fan_check_period_ticks;
-        }
-
-        if (period_tick == period_ticks && !ignore_current_temp && (temp - temp_prev > cfg.jump_temp_delta))
-        {
-            ignore_current_temp = jump_timeout_ticks;
-        }
-
-        if (period_tick == period_ticks && cfg.verbose)
-        {
-            if (ignore_current_temp)
-                printf("¡%d!" MON_SPACE, temp);
-            else
-                printf("%d·%d" MON_SPACE, temp, real_fan_state);
-        }
-
-        if (period_tick == period_ticks && !ignore_current_temp)
-        {
-            if (temp <= cfg.t_low)
-                fan = I8K_FAN_OFF;
-            else if (temp > cfg.t_high)
-                fan = I8K_FAN_HIGH;
-            else if (temp >= cfg.t_mid)
-                fan = fan == I8K_FAN_HIGH ? fan : I8K_FAN_LOW;
-        }
-
+        // set fan state
         if (fan != last_fan_set && (fan != real_fan_state))
         {
             if (cfg.verbose)
+            {
                 printf("ƒ(%d)" MON_SPACE, fan);
-
+                fflush(stdout);
+            }
             last_fan_set = fan;
             i8k_set_fan_state(I8K_FAN_LEFT, fan);
             i8k_set_fan_state(I8K_FAN_RIGHT, fan);
         }
-
-        if (cfg.verbose)
-            fflush(stdout);
     }
 }
 
@@ -374,7 +369,6 @@ void cfg_load()
             line_id++;
             char *pos = strstr(str, "\n");
             pos[0] = '\0';
-            //printf("%s: [%s]\n", CFG_FILE, str);
             if (str[0] == '#' || str[0] == ';' || str[0] == '\0' || isspace(str[0]))
                 continue;
             pos = str;
@@ -408,9 +402,6 @@ void cfg_error(int line_id)
 
 void cfg_set(char *key, int value, int line_id)
 {
-    //if (cfg.verbose)
-    //printf("%s = %d\n", key, value);
-
     if (strcmp(key, "daemon") == 0)
         cfg.daemon = value;
     else if (strcmp(key, "period") == 0)
@@ -466,7 +457,6 @@ void usage()
     printf("  --t_mid CELSIUS                   (default: %d°)\n", cfg.t_mid);
     printf("  --t_high CELSIUS                  (default: %d°)\n", cfg.t_high);
     printf("  --bios_disable_method METHOD      (default: %d)\n", cfg.bios_disable_method);
-
     puts("");
 }
 void parse_args(int argc, char **argv)
