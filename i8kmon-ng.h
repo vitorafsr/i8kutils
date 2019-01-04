@@ -1,6 +1,10 @@
 
 #ifndef _I8KMON_NG_H
 #define _I8KMON_NG_H
+//dell-smm-hwmon
+#define I8K_SMM_SET_FAN 0x01a3
+#define I8K_SMM_GET_FAN 0x00a3
+#define I8K_SMM_GET_TEMP 0x10a3
 
 // dellfan start
 #define DISABLE_BIOS_METHOD1 0x30a3
@@ -38,6 +42,7 @@ int send_smm(unsigned int, unsigned int);
 #define I8K_GET_TEMP _IOR('i', 0x84, size_t)
 #define I8K_GET_FAN _IOWR('i', 0x86, size_t)
 #define I8K_SET_FAN _IOWR('i', 0x87, size_t)
+
 void i8k_set_fan_status(int, int);
 int i8k_get_fan_status(int);
 int i8k_get_cpu_temp();
@@ -69,6 +74,7 @@ struct t_cfg
     int bios_disable_method;
     int monitor_only;
     int tick;
+    int mode;
 };
 
 void monitor();

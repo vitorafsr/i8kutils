@@ -1,5 +1,7 @@
 /*
- * i8kmon-ng.c -- Fan monitor and control using i8k kernel module on Dell laptops.
+ * i8kmon-ng.c -- Fan monitor and control using dell-smm-hwmon(i8k) kernel module 
+ * or direct SMM BIOS calls on Dell laptops.
+ * 
  * Copyright (C) 2019 https://github.com/ru-ace
  * Using code for get/set temp/fan_states from https://github.com/vitorafsr/i8kutils
  * Using code for enable/disable bios fan control from https://github.com/clopez/dellfan
@@ -24,14 +26,14 @@
 #include <sys/io.h>
 #include <unistd.h>
 #include <signal.h>
-
 #include "i8kmon-ng.h"
 
 struct t_cfg cfg = {
+    .mode = 0, // 0 = i8k, 1 = smm
     .verbose = false,
     .period = 1000,
     .fan_check_period = 1000,
-    .monitor_fan_id = 1,
+    .monitor_fan_id = I8K_FAN_LEFT, // 0 = right, 1 = left
     .jump_timeout = 2000,
     .jump_temp_delta = 5,
     .t_low = 45,
@@ -39,12 +41,13 @@ struct t_cfg cfg = {
     .t_high = 80,
     .foolproof_checks = true,
     .daemon = false,
-    .bios_disable_method = 0,
+    .bios_disable_method = 0, // 0 = disable, 1/2 - smm calls from https://github.com/clopez/dellfan
     .monitor_only = false,
     .tick = 100,
+
 };
 
-//i8kctl start
+//i8kctl/smm start
 int i8k_fd;
 
 void i8k_open()
@@ -56,36 +59,85 @@ void i8k_open()
         exit(EXIT_FAILURE);
     }
 }
-void i8k_set_fan_state(int fan, int state)
+void set_fan_state(int fan, int state)
 {
     if (cfg.monitor_only)
         return;
 
-    int args[2] = {fan, state};
-    if (ioctl(i8k_fd, I8K_SET_FAN, &args) != 0)
+    if (cfg.mode)
     {
-        perror("i8k_set_fan_state ioctl error");
+        //smm
+        if (send_smm(I8K_SMM_SET_FAN, fan + (state << 8)) == -1)
+        {
+            perror("set_fan_state send_smm error");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else
+    {
+        //i8k
+        int args[2] = {fan, state};
+        if (ioctl(i8k_fd, I8K_SET_FAN, &args) != 0)
+        {
+            perror("set_fan_state ioctl error");
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+int get_fan_state(int fan)
+{
+    if (cfg.mode)
+    {
+        //smm
+        int res = send_smm(I8K_SMM_GET_FAN, fan);
+        if (res == -1)
+        {
+            perror("get_fan_state send_smm error");
+            exit(EXIT_FAILURE);
+        }
+        else
+        {
+            return res;
+        }
+    }
+    else
+    {
+        //i8k
+        int args[1] = {fan};
+        if (ioctl(i8k_fd, I8K_GET_FAN, &args) == 0)
+            return args[0];
+        perror("get_fan_state ioctl error");
         exit(EXIT_FAILURE);
     }
 }
-int i8k_get_fan_state(int fan)
-{
-    int args[1] = {fan};
-    if (ioctl(i8k_fd, I8K_GET_FAN, &args) == 0)
-        return args[0];
-    perror("i8k_get_fan_state ioctl error");
-    exit(EXIT_FAILURE);
-}
 
-int i8k_get_cpu_temp()
+int get_cpu_temp()
 {
-    int args[1];
-    if (ioctl(i8k_fd, I8K_GET_TEMP, &args) == 0)
-        return args[0];
-    perror("i8k_get_cpu_temp ioctl error");
-    exit(EXIT_FAILURE);
+    if (cfg.mode)
+    {
+        //smm
+        int res = send_smm(I8K_SMM_GET_TEMP, 0);
+        if (res == -1)
+        {
+            perror("get_cpu_temp send_smm error");
+            exit(EXIT_FAILURE);
+        }
+        else
+        {
+            return res;
+        }
+    }
+    else
+    {
+        //i8k
+        int args[1];
+        if (ioctl(i8k_fd, I8K_GET_TEMP, &args) == 0)
+            return args[0];
+        perror("get_cpu_temp ioctl error");
+        exit(EXIT_FAILURE);
+    }
 }
-//i8kctl end
+//i8kctl/smm end
 
 // dellfan start
 void init_ioperm()
@@ -93,13 +145,11 @@ void init_ioperm()
     if (ioperm(0xb2, 4, 1))
     {
         perror("init_ioperm");
-        cfg.bios_disable_method = 0;
         exit_failure();
     }
     if (ioperm(0x84, 4, 1))
     {
         perror("init_ioperm");
-        cfg.bios_disable_method = 0;
         exit_failure();
     }
 }
@@ -107,7 +157,6 @@ int i8k_smm(struct smm_regs *regs)
 {
     int rc;
     int eax = regs->eax;
-
     asm volatile("pushq %%rax\n\t"
                  "movl 0(%%rax),%%edx\n\t"
                  "pushq %%rdx\n\t"
@@ -132,7 +181,7 @@ int i8k_smm(struct smm_regs *regs)
                  "andl $1,%%eax\n"
                  : "=a"(rc)
                  : "a"(regs)
-                 : "%ebx", "%ecx", "%edx", "%esi", "%edi");
+                 : "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
 
     if (rc != 0 || (regs->eax & 0xffff) == 0xffff || regs->eax == eax)
         return -1;
@@ -141,55 +190,65 @@ int i8k_smm(struct smm_regs *regs)
 }
 int send_smm(unsigned int cmd, unsigned int arg)
 {
-
     struct smm_regs regs = {
         .eax = cmd,
+        .ebx = arg,
     };
 
-    regs.ebx = arg;
     int res = i8k_smm(&regs);
-    if (cfg.verbose)
-    {
-        printf("i8k_smm returns %#06x\n", res);
-        printf("send_smm returns %#06x\n", regs.eax);
-    }
-    return regs.eax;
+    //if (cfg.verbose)
+    //printf("send_smm(%#06x, %#06x): i8k_smm returns %#06x, eax = %#06x\n", cmd, arg, res, regs.eax);
+
+    return res == -1 ? res : regs.eax;
 }
 
 void bios_fan_control(int enable)
 {
-    if (geteuid() != 0)
+    if (!cfg.mode)
     {
-        printf("For using \"bios_disable_method\" you need root privileges\n");
-        cfg.bios_disable_method = 0;
-        exit_failure();
+        if (geteuid() != 0)
+        {
+            printf("For using \"bios_disable_method\" you need root privileges\n");
+            exit_failure();
+        }
+        init_ioperm();
     }
-    init_ioperm();
+    int res = -1;
     if (cfg.bios_disable_method == 1)
     {
         if (enable)
-            send_smm(ENABLE_BIOS_METHOD1, 0);
+            res = send_smm(ENABLE_BIOS_METHOD1, 0);
         else
-            send_smm(DISABLE_BIOS_METHOD1, 0);
+            res = send_smm(DISABLE_BIOS_METHOD1, 0);
     }
     else if (cfg.bios_disable_method == 2)
     {
         if (enable)
-            send_smm(ENABLE_BIOS_METHOD2, 0);
+            res = send_smm(ENABLE_BIOS_METHOD2, 0);
         else
-            send_smm(DISABLE_BIOS_METHOD2, 0);
+            res = send_smm(DISABLE_BIOS_METHOD2, 0);
     }
     else if (cfg.bios_disable_method == 3)
     {
         if (enable)
-            send_smm(ENABLE_BIOS_METHOD3, 0);
+            res = send_smm(ENABLE_BIOS_METHOD3, 0);
         else
-            send_smm(DISABLE_BIOS_METHOD3, 0);
+            res = send_smm(DISABLE_BIOS_METHOD3, 0);
     }
     else
     {
         printf("bios_disable_method can be 0 (dont try disable bios), 1 or 2");
         exit_failure();
+    }
+
+    if (res == -1)
+    {
+        printf("%s bios fan control failed. Exiting.\n", enable ? "Enabling" : "Disabling");
+        exit_failure();
+    }
+    else if (cfg.verbose)
+    {
+        printf("%s bios fan control MAY BE succeeded.\n", enable ? "Enabling" : "Disabling");
     }
 }
 // dellfan end
@@ -201,15 +260,17 @@ void monitor_show_legend()
     if (cfg.verbose)
     {
         puts("Config:");
+        printf("  mode                  %s\n", cfg.mode ? "smm" : "i8k");
         printf("  period                %ld ms\n", cfg.period);
         printf("  fan_check_period      %ld ms\n", cfg.fan_check_period);
-        printf("  monitor_fan_id        %s\n", cfg.monitor_fan_id == 0 ? "right" : "left");
+        printf("  monitor_fan_id        %s\n", cfg.monitor_fan_id == I8K_FAN_RIGHT ? "right" : "left");
         printf("  jump_timeout          %ld ms\n", cfg.jump_timeout);
         printf("  jump_temp_delta       %d°\n", cfg.jump_temp_delta);
         printf("  t_low                 %d°\n", cfg.t_low);
         printf("  t_mid                 %d°\n", cfg.t_mid);
         printf("  t_high                %d°\n", cfg.t_high);
         printf("  bios_disable_method   %d\n", cfg.bios_disable_method);
+
         puts("Legend:");
         puts("  [TT·F] Monitor(current state). TT - CPU temp, F - fan state");
         puts("  [ƒ(F)] Set fans state to F. Fan states: 0 = OFF, 1 = LOW, 2 = HIGH.");
@@ -223,7 +284,7 @@ void monitor()
 
     monitor_show_legend();
 
-    int temp = i8k_get_cpu_temp();
+    int temp = get_cpu_temp();
     int temp_prev = temp;
 
     int fan = I8K_FAN_OFF;
@@ -242,8 +303,8 @@ void monitor()
 
     if (cfg.monitor_only)
     {
-        puts("WARNING: working in monitor_only mode. No action will be taken.");
-        real_fan_state = i8k_get_fan_state(cfg.monitor_fan_id);
+        puts("WARNING: working in monitor_only mode. No action will be taken. Abnormal temp jump detection disabled");
+        real_fan_state = get_fan_state(cfg.monitor_fan_id);
         fan = real_fan_state;
     }
 
@@ -255,14 +316,14 @@ void monitor()
         fan_check_period_tick -= fan_check_period_tick == 0 ? 0 : 1;
         ignore_current_temp -= ignore_current_temp == 0 ? 0 : 1;
 
-        if (period_tick && fan_check_period_tick)
+        if (period_tick && (fan_check_period_tick || cfg.monitor_only))
             continue;
 
         // get real fan state
         if (fan_check_period_tick == 0)
         {
             fan_check_period_tick = fan_check_period_ticks;
-            real_fan_state = i8k_get_fan_state(cfg.monitor_fan_id);
+            real_fan_state = get_fan_state(cfg.monitor_fan_id);
             if (real_fan_state == last_fan_set)
                 last_fan_set = -1;
         }
@@ -275,19 +336,29 @@ void monitor()
             if (!ignore_current_temp)
             {
                 temp_prev = temp;
-                temp = i8k_get_cpu_temp();
-                if (temp - temp_prev > cfg.jump_temp_delta)
+                temp = get_cpu_temp();
+                if (temp - temp_prev > cfg.jump_temp_delta && !cfg.monitor_only)
                     // abnormal temp jump detected
                     ignore_current_temp = jump_timeout_ticks;
                 else
                 {
-                    // fan control logic
-                    if (temp <= cfg.t_low)
-                        fan = I8K_FAN_OFF;
-                    else if (temp > cfg.t_high)
-                        fan = I8K_FAN_HIGH;
-                    else if (temp >= cfg.t_mid)
-                        fan = fan == I8K_FAN_HIGH ? fan : I8K_FAN_LOW;
+                    if (!cfg.bios_disable_method && cfg.mode)
+                    {
+                        if (temp <= cfg.t_low)
+                            fan = I8K_FAN_OFF;
+                        else
+                            fan = real_fan_state;
+                    }
+                    else
+                    {
+                        // fan control logic
+                        if (temp <= cfg.t_low)
+                            fan = I8K_FAN_OFF;
+                        else if (temp > cfg.t_high)
+                            fan = I8K_FAN_HIGH;
+                        else if (temp >= cfg.t_mid)
+                            fan = fan == I8K_FAN_HIGH ? fan : I8K_FAN_LOW;
+                    }
                 }
             }
             if (cfg.verbose)
@@ -301,8 +372,16 @@ void monitor()
             }
         }
 
+        //some hack if we could not disable bios fan control
+        if (false && !cfg.bios_disable_method)
+        {
+            //if bios want high or low fan state - lets him do it
+            fan = (real_fan_state == 2 && fan == 1) ? 2 : fan;
+            fan = (real_fan_state == 1 && fan == 2) ? 1 : fan;
+        }
+
         // set fan state
-        if (fan != last_fan_set && (fan != real_fan_state))
+        if (fan != last_fan_set && (fan != real_fan_state) && !cfg.monitor_only)
         {
             if (cfg.verbose)
             {
@@ -310,8 +389,8 @@ void monitor()
                 fflush(stdout);
             }
             last_fan_set = fan;
-            i8k_set_fan_state(I8K_FAN_LEFT, fan);
-            i8k_set_fan_state(I8K_FAN_RIGHT, fan);
+            set_fan_state(I8K_FAN_LEFT, fan);
+            set_fan_state(I8K_FAN_RIGHT, fan);
         }
     }
 }
@@ -329,6 +408,7 @@ void foolproof_checks()
     check_failed += (cfg.jump_timeout < 100 || cfg.jump_timeout > 5000) ? foolproof_error("jump_timeout in [100,5000]") : false;
     check_failed += (cfg.jump_temp_delta < 2) ? foolproof_error("jump_temp_delta > 2") : false;
     check_failed += (cfg.bios_disable_method < 0 || cfg.bios_disable_method > 2) ? foolproof_error("bios_disable_method in [0,2]") : false;
+    check_failed += (cfg.mode != 0 && cfg.mode != 1) ? foolproof_error("mode = 0 (use i8k module) or 1 (direct smm calls) ") : false;
 
     if (check_failed)
     {
@@ -345,10 +425,7 @@ int foolproof_error(char *str)
 
 void exit_failure()
 {
-    i8k_set_fan_state(I8K_FAN_LEFT, I8K_FAN_HIGH);
-    i8k_set_fan_state(I8K_FAN_RIGHT, I8K_FAN_HIGH);
-    if (cfg.bios_disable_method == 1 || cfg.bios_disable_method == 2 || cfg.bios_disable_method == 3)
-        bios_fan_control(true);
+
     exit(EXIT_FAILURE);
 }
 
@@ -424,6 +501,8 @@ void cfg_set(char *key, int value, int line_id)
         cfg.foolproof_checks = value;
     else if (strcmp(key, "bios_disable_method") == 0)
         cfg.bios_disable_method = value;
+    else if (strcmp(key, "mode") == 0)
+        cfg.mode = value;
     else
     {
         if (line_id > 0)
@@ -448,15 +527,17 @@ void usage()
     puts("  -d  Daemon mode (detach from console)");
     puts("  -m  No control - monitor only (useful to monitor daemon working)");
     printf("Args(see %s for explains):\n", CFG_FILE);
+    printf("  --mode MODE                       (default: %d = %s)\n", cfg.mode, cfg.mode ? "smm" : "i8k");
     printf("  --period MILLISECONDS             (default: %ld ms)\n", cfg.period);
     printf("  --fan_check_period MILLISECONDS   (default: %ld ms)\n", cfg.fan_check_period);
-    printf("  --monitor_fan_id FAN_ID           (default: %d = %s)\n", cfg.monitor_fan_id, cfg.monitor_fan_id == 0 ? "right" : "left");
+    printf("  --monitor_fan_id FAN_ID           (default: %d = %s)\n", cfg.monitor_fan_id, cfg.monitor_fan_id == I8K_FAN_RIGHT ? "right" : "left");
     printf("  --jump_timeout MILLISECONDS       (default: %ld ms)\n", cfg.jump_timeout);
     printf("  --jump_temp_delta CELSIUS         (default: %d°)\n", cfg.jump_temp_delta);
     printf("  --t_low CELSIUS                   (default: %d°)\n", cfg.t_low);
     printf("  --t_mid CELSIUS                   (default: %d°)\n", cfg.t_mid);
     printf("  --t_high CELSIUS                  (default: %d°)\n", cfg.t_high);
     printf("  --bios_disable_method METHOD      (default: %d)\n", cfg.bios_disable_method);
+
     puts("");
 }
 void parse_args(int argc, char **argv)
@@ -524,8 +605,14 @@ void daemonize()
 void signal_handler(int signal_id)
 {
     if (cfg.verbose)
-        printf("\nCatch signal %d. Exiting...\n", signal_id);
-    exit_failure();
+        printf("\nCatch signal %d. Restoring bios fan control.\n", signal_id);
+
+    set_fan_state(I8K_FAN_LEFT, I8K_FAN_HIGH);
+    set_fan_state(I8K_FAN_RIGHT, I8K_FAN_HIGH);
+    if (cfg.bios_disable_method == 1 || cfg.bios_disable_method == 2 || cfg.bios_disable_method == 3)
+        bios_fan_control(true);
+
+    exit(EXIT_SUCCESS);
 }
 
 void signal_handler_init()
@@ -542,11 +629,31 @@ void signal_handler_init()
     }
 }
 
+void init_smm()
+{
+    if (geteuid() != 0)
+    {
+        printf("For using \"mode 1\"(smm) you need root privileges\n");
+        exit_failure();
+    }
+    else
+    {
+        init_ioperm();
+        get_cpu_temp();
+    }
+}
+
 int main(int argc, char **argv)
 {
-    i8k_open();
+
     cfg_load();
     parse_args(argc, argv);
+
+    if (cfg.mode)
+        init_smm();
+    else
+        i8k_open();
+
     if (cfg.verbose)
         print_output_header();
     signal_handler_init();
