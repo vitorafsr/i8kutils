@@ -46,7 +46,7 @@ void i8k_open();
 
 // i8kmon-ng
 #define CFG_FILE "/etc/i8kmon-ng.conf"
-#define MON_SPACE "  "
+#define MON_SPACE "   "
 #define true 1
 #define false 0
 
@@ -57,6 +57,8 @@ struct t_cfg
 {
     int verbose;
     unsigned long period;
+    unsigned long fan_check_period;
+    int monitor_fan_id;
     unsigned long jump_timeout;
     int jump_temp_delta;
     int t_low;
@@ -66,9 +68,11 @@ struct t_cfg
     int daemon;
     int bios_disable_method;
     int monitor_only;
+    int tick;
 };
 
 void monitor();
+void monitor_show_legend();
 void parse_args(int, char **);
 void exit_failure();
 void usage();
