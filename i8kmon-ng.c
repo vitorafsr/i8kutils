@@ -281,11 +281,6 @@ void monitor_show_legend()
         {
             puts("WARNING: working in monitor_only mode. No action will be taken. Abnormal temp jump detection disabled");
         }
-        else if (!cfg.bios_disable_method && cfg.mode && cfg.verbose)
-        {
-            puts("\nWARNING: With this config (bios_disable_method = 0 and mode = 1) i8kmon-ng only helps bios to stop fans at t_low");
-            puts("         Other fans control logic was disabled. So if you disable bios fan control with third-party method - STOP IT NOW.\n");
-        }
 
         puts("Monitor:");
     }
