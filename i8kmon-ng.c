@@ -275,6 +275,17 @@ void monitor_show_legend()
         puts("  [TT·F] Monitor(current state). TT - CPU temp, F - fan state");
         puts("  [ƒ(F)] Set fans state to F. Fan states: 0 = OFF, 1 = LOW, 2 = HIGH.");
         puts("  [¡TT!] Abnormal temp jump detected. TT - CPU temp. ");
+
+        if (cfg.monitor_only)
+        {
+            puts("WARNING: working in monitor_only mode. No action will be taken. Abnormal temp jump detection disabled");
+        }
+        else if (!cfg.bios_disable_method && cfg.mode && cfg.verbose)
+        {
+            puts("\nWARNING: With this config (bios_disable_method = 0 and mode = 1) i8kmon-ng only help bios to stop fans at t_low");
+            puts("         Other fans control logic was disabled. So if you disable bios fan control with third-party method - STOP IT NOW.\n");
+        }
+
         puts("Monitor:");
     }
 }
@@ -301,12 +312,9 @@ void monitor()
 
     int last_fan_set = -1;
 
-    if (cfg.monitor_only)
-    {
-        puts("WARNING: working in monitor_only mode. No action will be taken. Abnormal temp jump detection disabled");
-        real_fan_state = get_fan_state(cfg.monitor_fan_id);
-        fan = real_fan_state;
-    }
+    // disable abnormal temp jump detectedion in monitor_only mode
+    // and when we just helping bios to stop fans at t_low(without other fan control logic).
+    int disable_jump_detection = cfg.monitor_only || (!cfg.bios_disable_method && cfg.mode);
 
     while (1)
     {
@@ -337,13 +345,16 @@ void monitor()
             {
                 temp_prev = temp;
                 temp = get_cpu_temp();
-                if (temp - temp_prev > cfg.jump_temp_delta && !cfg.monitor_only)
+                if (temp - temp_prev > cfg.jump_temp_delta && !disable_jump_detection)
                     // abnormal temp jump detected
                     ignore_current_temp = jump_timeout_ticks;
                 else
                 {
                     if (!cfg.bios_disable_method && cfg.mode)
                     {
+                        // Helping bios stop fans at t_low.
+                        // Working only at smm mode cause i has issue with i8k:
+                        // Setting fan = I8K_FAN_OFF : disabling bios fan control.
                         if (temp <= cfg.t_low)
                             fan = I8K_FAN_OFF;
                         else
@@ -370,14 +381,6 @@ void monitor()
 
                 fflush(stdout);
             }
-        }
-
-        //some hack if we could not disable bios fan control
-        if (false && !cfg.bios_disable_method)
-        {
-            //if bios want high or low fan state - lets him do it
-            fan = (real_fan_state == 2 && fan == 1) ? 2 : fan;
-            fan = (real_fan_state == 1 && fan == 2) ? 1 : fan;
         }
 
         // set fan state
@@ -516,7 +519,8 @@ void cfg_set(char *key, int value, int line_id)
 void print_output_header()
 {
     puts("i8kmon-ng v1.0 by https://github.com/ru-ace");
-    puts("Fan monitor and control using i8k kernel module on Dell laptops.\n");
+    puts("Fan monitor and control using dell-smm-hwmon(i8k) kernel module");
+    puts("or direct SMM BIOS calls on Dell laptops.\n");
 }
 void usage()
 {
