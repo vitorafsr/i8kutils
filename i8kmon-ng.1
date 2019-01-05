@@ -1,0 +1,165 @@
+.TH i8kmon-ng 1 "05 Jab 2019" "ace" Utilities
+.SH "NAME"
+i8kmon-ng \- temperature monitor for Dell Laptops
+.SH "SYNOPSIS"
+i8kmon-ng [\fIOPTION\fP]...
+.SH "DESCRIPTION"
+The i8kmon-ng is a daemon that monitors the cpu temperature, and control the fan speed on some Dell laptops. 
+.br
+It does that by means of regularly reading the system temperature, and choosing appropriate speed of the fans. 
+.LP
+All options can be customized at '/etc/i8kmon-ng.conf', or via command-line options
+.LP
+On Debian and derivated OSes, i8kmon-ng starts in the background by default as a service.
+.SH "ACCESS MODE"
+i8kmon-ng can access for temp and fan control with two modes (\fB--mode\fR <\fImode\fP>):
+.IP \[bu] 2
+\fImode\fP 0: use dell-smm-hwmon(i8k) kernel module. This mode is more safety and can be used by unprivileged user.
+.IP \[bu] 
+\fImode\fP 1: use direct SMM BIOS calls. USE ON YOUR OWN RISK. To use this mode, i8kmon-ng needs root privileges. 
+.SH "DISABLE BIOS FAN CONTROL"
+USE ON YOUR OWN RISK. 
+.br
+i8kmon-ng can try disable BIOS fan control with two methods(\fB--bios_disable_method\fR <\fImethod\fP>):
+.IP \[bu] 2
+\fImethod\fP 1: using code from \fIhttps://github.com/clopez/dellfan\fP
+.IP \[bu]
+\fImethod\fP 2: identical with \fIhttps://github.com/TomFreudenberg/dell-bios-fan-control\fP
+.LP
+To use this feature, i8kmon-ng needs root privileges.
+.LP
+Before set this option in config file, stop i8kmon-ng (sudo service i8kmon-ng stop) and try every method in verbose mode
+(sudo i8kmon-ng -v --bios_disable_method 2 --fan_ctrl_logic_mode 0).
+Wait until cpu temp will be greater \fBt_mid\fR and fans was on.
+If during cpu temp lowering BIOS doesn't try change fan state: seems this method works.
+.LP
+On exit (SIGTERM, SIGINT) i8kmon-ng set fans speed to max and try to restore BIOS fan control with corresponding \fImethod\fP
+.LP
+Use \fImethod\fP 0 for disable this feature. 
+.SH "FAN CONTROL LOGIC"
+i8kmon-ng has two modes of fans control logic regarding 3 temperature thresholds \fBt_low\fR, \fBt_mid\fR, \fBt_high\fR (\fB--fan_ctrl_logic_mode\fR <\fImode\fP>):
+.IP \[bu] 2
+\fImode\fP 0: Default logic
+.RS
+.IP \[bu] 2 
+When temperature rising:
+.RS
+.IP \[bu] 2 
+if temp in [t_low,t_mid] and fan = 0: fan = 0
+.IP \[bu]
+if temp > t_mid: fan = 1
+.IP \[bu] 
+if temp > t_high: fan = 2
+.RE
+.IP \[bu]
+When temperature lowering:
+.RS
+.IP \[bu] 2
+if temp < t_low: fan = 0
+.IP \[bu]
+if temp in [t_low,t_mid] and fan = 1: fan = 1
+.IP \[bu]
+if temp in [t_low, t_high] and fan = 2: fan = 2
+.RE
+.RE
+.IP \[bu]
+\fImode\fP 1: Simple logic which allow BIOS to control fans. Stop/start fans оnly at boundary temps
+.RS
+.IP \[bu] 2
+if temp < t_low: fan = 0
+.IP \[bu]
+if temp > t_high: fan = 2 
+.RE
+.SH "ABNORMAL TEMP JUMP DETECTION"
+i8kmon-ng has buildin mechanism for detect abnormal cpu temp jumps: short(1-2 seconds) cpu temp jumps on +20/+30 celsius which are cause of starting fans. You can control it via \fB--jump_temp_delta\fR and \fB--jump_timeout\fR options.
+.LP
+To disable this feature set \fBjump_temp_delta\fR to 100.
+
+.SH "OPTIONS"
+.LP
+i8kmon-ng accepts the following command\-line options
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Show help and current values of all options. Before showing help programm load /etc/i8kmon-ng.conf. So it can be used for config file validation.
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Report hardware status and program actions on stdout.
+.TP
+\fB\-m\fR, \fB\-\-monitor_only\fR
+Report hardware status on stdout in get_only mode. Enable verbose output.
+.TP
+\fB\-d\fR, \fB\-\-daemon\fR
+Reports child PID in stdout and detach from console. Please don't use this option, until you know what you do: current version of the startup scripts works only with default value. Default is 0 (foreground mode).
+.TP
+\fB--mode\fR <\fImode\fP>
+Set mode for accessing temp and fan controls. Default is 0.
+.br
+\fImode\fP 0: use dell-smm-hwmon(i8k) kernel module
+.br
+\fImode\fP 1: use direct SMM BIOS calls. USE ON YOUR OWN RISK. 
+.TP
+\fB--fan_ctrl_logic_mode\fR <\fImode\fP>
+Set fan control logic. Default is 0.
+.br
+\fImode\fP 0: default logic (see above)
+.br
+\fImode\fP 1: allow BIOS to control fans. Stop/start fans оnly at boundary temps(see above)
+.TP
+\fB--bios_disable_method\fR <\fImethod\fP>
+USE ON YOUR OWN RISK. Set disable BIOS fans control method. Not always works. Default is 0.
+.br
+\fImethod\fP 0: don't disablе BIOS fans control 
+.br
+\fImethod\fP 1: use DISABLE_BIOS_METHOD1
+.br
+\fImethod\fP 2: use DISABLE_BIOS_METHOD2
+.TP
+\fB--period\fR <\fImilliseconds\fP>
+Specifies the interval at which the daemon checks the hardware status. Default is 1000 milliseconds.
+.TP
+\fB--fan_check_period\fR <\fImilliseconds\fP>
+Specifies the interval at which the daemon checks the fans speed and set it. Useful if bios_disable_method don't works. Default is 1000 milliseconds.
+.TP
+\fB--monitor_fan_id\fR <\fIFAN_ID\fP>
+Fan ID for monitoring: 1 = left, 0 = right. State of this fan will shows in verbose mode. Default is 1. 
+.TP
+\fB--jump_timeout\fR <\fImilliseconds\fP>
+Specifies the interval at which the daemon ignore cpu temperature, after an abnormal temperature jump detected. Default is 2000 milliseconds.
+.TP
+\fB--jump_temp_delta\fR <\fIcelsius\fP>
+Temperature difference between checks, at which the new value is considered abnormal. Default is 5° celsius. 
+.TP
+\fB--t_low\fR <\fIcelsius\fP>
+Temperature threshold "low" in celsius. Default is 45° celsius.
+.TP
+\fB--t_mid\fR <\fIcelsius\fP>
+Temperature threshold "middle" in celsius. Default is 60° celsius.
+.TP
+\fB--t_high\fR <\fcelsius\fP>
+Temperature threshold "high" in celsius. Default is 80° celsius. 
+.SH "CONFIGURATION"
+.LP
+i8kmon-ng has builtin default values of all options. User can see current values using \fB\-\-help\fR option. 
+.LP
+All options with double dash described before can be changed in /etc/i8kmon-ng.conf using same name.
+.SH "FILES"
+.LP
+\fI/etc/i8kmon-ng.conf\fP
+.SH "AUTHOR"
+.LP
+ace (https://github.com/ru-ace)
+.SH "CREDITS"
+.LP
+Code for access to temp and fan control using dell-smm-hwmon(i8k) kernel module from \fIhttps://github.com/vitorafsr/i8kutils\fP
+.br
+Code for enable/disable BIOS fan control and direct SMM BIOS calls from \fIhttps://github.com/clopez/dellfan\fP
+.SH "COPYRIGHT"
+.LP
+i8kmon-ng and all the i8kutils programs, scripts and other files are
+distributed under the GNU General Public License (GPL).
+.br
+On Debian GNU/Linux systems, the complete text of the GNU General
+Public License can be found in `/usr/share/common-licenses/GPL'.
+.SH "SEE ALSO"
+.LP
+\fBi8kctl\fP(1), \fBi8kmon\fP(1)  

@@ -55,7 +55,10 @@ void i8k_open()
     i8k_fd = open(I8K_PROC, O_RDONLY);
     if (i8k_fd < 0)
     {
-        perror("can't open " I8K_PROC);
+        show_header();
+        perror("Can't open " I8K_PROC);
+        puts("Seems missing dell-smm-hwmon(i8k) kernel module");
+        puts("You can try \"--mode 1\" for using Dell SMM BIOS calls");
         exit(EXIT_FAILURE);
     }
 }
@@ -143,6 +146,7 @@ void init_smm()
 {
     if (geteuid() != 0)
     {
+        show_header();
         puts("For using \"mode 1\"(smm) you need root privileges\n");
         exit_failure();
     }
@@ -151,6 +155,7 @@ void init_smm()
         init_ioperm();
         if (!check_dell_smm_signature())
         {
+            show_header();
             puts("Dell SMM BIOS signature not detected.\ni8kmon-ng works only on Dell Laptops.");
             exit_failure();
         }
