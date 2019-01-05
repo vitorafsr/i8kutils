@@ -282,7 +282,7 @@ void monitor_show_legend()
         }
         else if (!cfg.bios_disable_method && cfg.mode && cfg.verbose)
         {
-            puts("\nWARNING: With this config (bios_disable_method = 0 and mode = 1) i8kmon-ng only help bios to stop fans at t_low");
+            puts("\nWARNING: With this config (bios_disable_method = 0 and mode = 1) i8kmon-ng only helps bios to stop fans at t_low");
             puts("         Other fans control logic was disabled. So if you disable bios fan control with third-party method - STOP IT NOW.\n");
         }
 
@@ -312,9 +312,9 @@ void monitor()
 
     int last_fan_set = -1;
 
-    // disable abnormal temp jump detectedion in monitor_only mode
-    // and when we just helping bios to stop fans at t_low(without other fan control logic).
-    int disable_jump_detection = cfg.monitor_only || (!cfg.bios_disable_method && cfg.mode);
+    // disable abnormal temp jump detection in monitor_only mode
+    //// and when we just helping bios to stop fans at t_low(without other fan control logic).
+    int disable_jump_detection = cfg.monitor_only; // || (!cfg.bios_disable_method && cfg.mode);
 
     while (1)
     {
@@ -352,13 +352,13 @@ void monitor()
                 {
                     if (!cfg.bios_disable_method && cfg.mode)
                     {
-                        // Helping bios stop fans at t_low.
+                        // Helping bios to stop fans at t_low.
                         // Working only at smm mode cause i has issue with i8k:
                         //   setting fan = I8K_FAN_OFF cause of disabling bios fan control.
                         if (temp <= cfg.t_low)
                             fan = I8K_FAN_OFF;
                         else if (temp > cfg.t_high)
-                            //foolproof protections if bios fan control was disabled with third-party method
+                            //foolproof protection if bios fan control was disabled with third-party method
                             fan = I8K_FAN_HIGH;
                         else
                             fan = real_fan_state;
