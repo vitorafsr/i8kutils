@@ -354,9 +354,12 @@ void monitor()
                     {
                         // Helping bios stop fans at t_low.
                         // Working only at smm mode cause i has issue with i8k:
-                        // Setting fan = I8K_FAN_OFF : disabling bios fan control.
+                        //   setting fan = I8K_FAN_OFF cause of disabling bios fan control.
                         if (temp <= cfg.t_low)
                             fan = I8K_FAN_OFF;
+                        else if (temp > cfg.t_high)
+                            //foolproof protections if bios fan control was disabled with third-party method
+                            fan = I8K_FAN_HIGH;
                         else
                             fan = real_fan_state;
                     }
