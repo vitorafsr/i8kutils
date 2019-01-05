@@ -44,7 +44,7 @@ struct t_cfg cfg = {
     .bios_disable_method = 0, // 0 = disable, 1/2 - smm calls from https://github.com/clopez/dellfan
     .monitor_only = false,
     .tick = 100,
-
+    .fan_ctrl_logic_mode = 0, // 0 - default, 1 - allow bios to control fans: stops/starts fans оnly at boundary temps
 };
 
 //i8kctl/smm start
@@ -261,6 +261,8 @@ void monitor_show_legend()
     {
         puts("Config:");
         printf("  mode                  %s\n", cfg.mode ? "smm" : "i8k");
+        printf("  fan_ctrl_logic_mode   %d\n", cfg.fan_ctrl_logic_mode);
+        printf("  bios_disable_method   %d\n", cfg.bios_disable_method);
         printf("  period                %ld ms\n", cfg.period);
         printf("  fan_check_period      %ld ms\n", cfg.fan_check_period);
         printf("  monitor_fan_id        %s\n", cfg.monitor_fan_id == I8K_FAN_RIGHT ? "right" : "left");
@@ -269,7 +271,6 @@ void monitor_show_legend()
         printf("  t_low                 %d°\n", cfg.t_low);
         printf("  t_mid                 %d°\n", cfg.t_mid);
         printf("  t_high                %d°\n", cfg.t_high);
-        printf("  bios_disable_method   %d\n", cfg.bios_disable_method);
 
         puts("Legend:");
         puts("  [TT·F] Monitor(current state). TT - CPU temp, F - fan state");
@@ -313,8 +314,7 @@ void monitor()
     int last_fan_set = -1;
 
     // disable abnormal temp jump detection in monitor_only mode
-    //// and when we just helping bios to stop fans at t_low(without other fan control logic).
-    int disable_jump_detection = cfg.monitor_only; // || (!cfg.bios_disable_method && cfg.mode);
+    int disable_jump_detection = cfg.monitor_only;
 
     while (1)
     {
@@ -350,11 +350,9 @@ void monitor()
                     ignore_current_temp = jump_timeout_ticks;
                 else
                 {
-                    if (!cfg.bios_disable_method && cfg.mode)
+                    if (cfg.fan_ctrl_logic_mode)
                     {
-                        // Helping bios to stop fans at t_low.
-                        // Working only at smm mode cause i has issue with i8k:
-                        //   setting fan = I8K_FAN_OFF cause of disabling bios fan control.
+                        // allow bios to control fans: stops/starts fans оnly at boundary temps
                         if (temp <= cfg.t_low)
                             fan = I8K_FAN_OFF;
                         else if (temp > cfg.t_high)
@@ -365,7 +363,7 @@ void monitor()
                     }
                     else
                     {
-                        // fan control logic
+                        // default fan control logic
                         if (temp <= cfg.t_low)
                             fan = I8K_FAN_OFF;
                         else if (temp > cfg.t_high)
@@ -415,6 +413,7 @@ void foolproof_checks()
     check_failed += (cfg.jump_temp_delta < 2) ? foolproof_error("jump_temp_delta > 2") : false;
     check_failed += (cfg.bios_disable_method < 0 || cfg.bios_disable_method > 2) ? foolproof_error("bios_disable_method in [0,2]") : false;
     check_failed += (cfg.mode != 0 && cfg.mode != 1) ? foolproof_error("mode = 0 (use i8k module) or 1 (direct smm calls) ") : false;
+    check_failed += (cfg.fan_ctrl_logic_mode != 0 && cfg.fan_ctrl_logic_mode != 1) ? foolproof_error("fan_ctrl_logic_mode = 0 (default fan control logic) or 1 (stops/starts fans оnly at boundary temps) ") : false;
 
     if (check_failed)
     {
@@ -509,6 +508,8 @@ void cfg_set(char *key, int value, int line_id)
         cfg.bios_disable_method = value;
     else if (strcmp(key, "mode") == 0)
         cfg.mode = value;
+    else if (strcmp(key, "fan_ctrl_logic_mode") == 0)
+        cfg.fan_ctrl_logic_mode = value;
     else
     {
         if (line_id > 0)
@@ -535,6 +536,8 @@ void usage()
     puts("  -m  No control - monitor only (useful to monitor daemon working)");
     printf("Args(see %s for explains):\n", CFG_FILE);
     printf("  --mode MODE                       (default: %d = %s)\n", cfg.mode, cfg.mode ? "smm" : "i8k");
+    printf("  --fan_ctrl_logic_mode MODE        (default: %d)\n", cfg.fan_ctrl_logic_mode);
+    printf("  --bios_disable_method METHOD      (default: %d)\n", cfg.bios_disable_method);
     printf("  --period MILLISECONDS             (default: %ld ms)\n", cfg.period);
     printf("  --fan_check_period MILLISECONDS   (default: %ld ms)\n", cfg.fan_check_period);
     printf("  --monitor_fan_id FAN_ID           (default: %d = %s)\n", cfg.monitor_fan_id, cfg.monitor_fan_id == I8K_FAN_RIGHT ? "right" : "left");
@@ -543,7 +546,6 @@ void usage()
     printf("  --t_low CELSIUS                   (default: %d°)\n", cfg.t_low);
     printf("  --t_mid CELSIUS                   (default: %d°)\n", cfg.t_mid);
     printf("  --t_high CELSIUS                  (default: %d°)\n", cfg.t_high);
-    printf("  --bios_disable_method METHOD      (default: %d)\n", cfg.bios_disable_method);
 
     puts("");
 }

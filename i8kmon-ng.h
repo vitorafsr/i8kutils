@@ -63,6 +63,7 @@ struct t_cfg
     int verbose;
     unsigned long period;
     unsigned long fan_check_period;
+    int fan_ctrl_logic_mode;
     int monitor_fan_id;
     unsigned long jump_timeout;
     int jump_temp_delta;
