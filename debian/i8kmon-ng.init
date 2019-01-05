@@ -24,7 +24,6 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 NAME=i8kmon-ng
 DAEMON=/usr/bin/i8kmon-ng
-PROC_I8K=/proc/i8k
 DESC="Fan control for Dell laptops"
 I8KMON_NG_ARGS=""
 PIDFILE=/var/run/$NAME.pid
@@ -34,10 +33,6 @@ test -x $DAEMON || (log_failure_msg "Could not find $DAEMON."; exit 5)
 case "$1" in
 	start)
 		log_success_msg "Starting $DESC" "$NAME"
-		if [ ! -f "$PROC_I8K" ]; then
-			log_failure_msg "Could not find $PROC_I8K."
-			exit 1
-		fi
 		start-stop-daemon --start --quiet --pidfile $PIDFILE \
 			--background --make-pidfile --startas $DAEMON -- $I8KMON_NG_ARGS
 		;;

@@ -1,7 +1,6 @@
 [Unit]
 Description=Dell laptop thermal monitoring ng
 Documentation=man:i8kmon-ng
-ConditionPathExists=/proc/i8k
 
 [Service]
 ExecStart=/usr/bin/i8kmon-ng
