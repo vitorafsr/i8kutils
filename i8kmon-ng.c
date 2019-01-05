@@ -139,6 +139,24 @@ int get_cpu_temp()
 //i8kctl/smm end
 
 // dellfan start
+void init_smm()
+{
+    if (geteuid() != 0)
+    {
+        puts("For using \"mode 1\"(smm) you need root privileges\n");
+        exit_failure();
+    }
+    else
+    {
+        init_ioperm();
+        if (!check_dell_smm_signature())
+        {
+            puts("Dell SMM BIOS signature not detected.\ni8kmon-ng works only on Dell Laptops.");
+            exit_failure();
+        }
+    }
+}
+
 void init_ioperm()
 {
     if (ioperm(0xb2, 4, 1))
@@ -199,8 +217,19 @@ int send_smm(unsigned int cmd, unsigned int arg)
     int res = i8k_smm(&regs);
     //if (cfg.verbose)
     //printf("send_smm(%#06x, %#06x): i8k_smm returns %#06x, eax = %#06x\n", cmd, arg, res, regs.eax);
-
     return res == -1 ? res : regs.eax;
+}
+
+int check_dell_smm_signature()
+{
+    struct smm_regs regs = {
+        .eax = I8K_SMM_GET_DELL_SIGNATURE,
+        .ebx = 0,
+    };
+    int res = i8k_smm(&regs);
+    // regs.edx = DELL 0x44454c4c
+    // regs.eax = DIAG 0x44494147
+    return res == 0 && regs.eax == 0x44494147 && regs.edx == 0x44454c4c;
 }
 
 void bios_fan_control(int enable)
@@ -518,15 +547,14 @@ void cfg_set(char *key, int value, int line_id)
         exit_failure();
     }
 }
-void print_output_header()
+void show_header()
 {
     puts("i8kmon-ng v1.0 by https://github.com/ru-ace");
-    puts("Fan monitor and control using dell-smm-hwmon(i8k) kernel module");
-    puts("or direct SMM BIOS calls on Dell laptops.\n");
+    puts("Fan monitor and control for Dell laptops via dell-smm-hwmon(i8k) kernel module or direct SMM BIOS calls.\n");
 }
 void usage()
 {
-    print_output_header();
+    show_header();
     puts("Usage: i8kmon-ng [OPTIONS]");
     puts("  -h  Show this help");
     puts("  -v  Verbose mode");
@@ -611,13 +639,15 @@ void daemonize()
 }
 void signal_handler(int signal_id)
 {
-    if (cfg.verbose)
-        printf("\nCatch signal %d. Restoring bios fan control.\n", signal_id);
 
-    set_fans_state(I8K_FAN_HIGH);
-    if (cfg.bios_disable_method == 1 || cfg.bios_disable_method == 2 || cfg.bios_disable_method == 3)
-        bios_fan_control(true);
-
+    if (!cfg.monitor_only)
+    {
+        if (cfg.verbose)
+            printf("\nCatch signal %d. Restoring bios fan control.\n", signal_id);
+        set_fans_state(I8K_FAN_HIGH);
+        if (cfg.bios_disable_method == 1 || cfg.bios_disable_method == 2 || cfg.bios_disable_method == 3)
+            bios_fan_control(true);
+    }
     exit(EXIT_SUCCESS);
 }
 
@@ -635,23 +665,10 @@ void signal_handler_init()
     }
 }
 
-void init_smm()
-{
-    if (geteuid() != 0)
-    {
-        printf("For using \"mode 1\"(smm) you need root privileges\n");
-        exit_failure();
-    }
-    else
-    {
-        init_ioperm();
-        get_cpu_temp();
-    }
-}
 void bios_fan_control_scanner()
 {
     // Please DON'T USE THIS CODE - it may be DANGEROUS
-    // Also: seaching algo based on fact for my Dell 7559:
+    // Also: algorithm of search based on fact from my Dell 7559:
     //       if i set fan_state = LOW(1), bios set it to HIGH(2) within 10 seconds
     //       i don't sure that this fact is true for all dell notebooks.
     // No success on Dell 7559 :(
@@ -701,7 +718,7 @@ int main(int argc, char **argv)
         i8k_open();
 
     if (cfg.verbose)
-        print_output_header();
+        show_header();
     signal_handler_init();
     if (cfg.foolproof_checks)
         foolproof_checks();

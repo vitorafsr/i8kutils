@@ -5,6 +5,7 @@
 #define I8K_SMM_SET_FAN 0x01a3
 #define I8K_SMM_GET_FAN 0x00a3
 #define I8K_SMM_GET_TEMP 0x10a3
+#define I8K_SMM_GET_DELL_SIGNATURE 0xffa3 //I8K_SMM_GET_DELL_SIG2
 
 // dellfan start
 #define DISABLE_BIOS_METHOD1 0x30a3
@@ -28,6 +29,7 @@ void bios_fan_control(int);
 void init_ioperm();
 int i8k_smm(struct smm_regs *);
 int send_smm(unsigned int, unsigned int);
+
 // dellfan end
 
 // i8kctl start
@@ -81,12 +83,13 @@ struct t_cfg
     int tick;
     int mode;
 };
-
+int check_dell_smm_signature();
 void monitor();
 void monitor_show_legend();
 void parse_args(int, char **);
 void exit_failure();
 void usage();
+void show_header();
 
 void signal_handler(int);
 void signal_handler_init();
