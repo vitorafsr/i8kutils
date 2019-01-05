@@ -69,7 +69,7 @@ void set_fan_state(int fan, int state)
         //smm
         if (send_smm(I8K_SMM_SET_FAN, fan + (state << 8)) == -1)
         {
-            perror("set_fan_state send_smm error");
+            puts("set_fan_state send_smm error");
             exit(EXIT_FAILURE);
         }
     }
@@ -92,7 +92,7 @@ int get_fan_state(int fan)
         int res = send_smm(I8K_SMM_GET_FAN, fan);
         if (res == -1)
         {
-            perror("get_fan_state send_smm error");
+            puts("get_fan_state send_smm error");
             exit(EXIT_FAILURE);
         }
         else
@@ -119,7 +119,7 @@ int get_cpu_temp()
         int res = send_smm(I8K_SMM_GET_TEMP, 0);
         if (res == -1)
         {
-            perror("get_cpu_temp send_smm error");
+            puts("get_cpu_temp send_smm error");
             exit(EXIT_FAILURE);
         }
         else
@@ -255,6 +255,11 @@ void bios_fan_control(int enable)
 
 // i8kmon-ng start
 
+void set_fans_state(int state)
+{
+    set_fan_state(I8K_FAN_LEFT, state);
+    set_fan_state(I8K_FAN_RIGHT, state);
+}
 void monitor_show_legend()
 {
     if (cfg.verbose)
@@ -388,8 +393,7 @@ void monitor()
                 fflush(stdout);
             }
             last_fan_set = fan;
-            set_fan_state(I8K_FAN_LEFT, fan);
-            set_fan_state(I8K_FAN_RIGHT, fan);
+            set_fans_state(fan);
         }
     }
 }
@@ -611,8 +615,7 @@ void signal_handler(int signal_id)
     if (cfg.verbose)
         printf("\nCatch signal %d. Restoring bios fan control.\n", signal_id);
 
-    set_fan_state(I8K_FAN_LEFT, I8K_FAN_HIGH);
-    set_fan_state(I8K_FAN_RIGHT, I8K_FAN_HIGH);
+    set_fans_state(I8K_FAN_HIGH);
     if (cfg.bios_disable_method == 1 || cfg.bios_disable_method == 2 || cfg.bios_disable_method == 3)
         bios_fan_control(true);
 
@@ -644,6 +647,46 @@ void init_smm()
     {
         init_ioperm();
         get_cpu_temp();
+    }
+}
+void bios_fan_control_scanner()
+{
+    // Please DON'T USE THIS CODE - it may be DANGEROUS
+    // Also: seaching algo based on fact for my Dell 7559:
+    //       if i set fan_state = LOW(1), bios set it to HIGH(2) within 10 seconds
+    //       i don't sure that this fact is true for all dell notebooks.
+    // No success on Dell 7559 :(
+    exit_failure();
+    for (int i = 0x5; i <= 0xff; i++)
+    {
+        int cmd = (i << 8) + 0xa3;
+        printf("send_smm(%#06x) ", cmd);
+        int res = -1; // send_smm(cmd, 0);
+        printf("retured %#06x", res);
+        if (res == -1)
+        {
+            printf(", bad :(\n");
+            continue;
+        }
+        else
+        {
+            sleep(1);
+            set_fans_state(I8K_FAN_LOW);
+            printf(", sleep(10s)");
+        }
+
+        fflush(stdout);
+        sleep(10);
+        int real_fan_state = get_fan_state(I8K_FAN_LEFT);
+        if (real_fan_state == 1)
+        {
+            printf(", SEEMS WE FOUND DISABLE BIOS FAN COTROL :)))\n");
+            exit(1);
+        }
+        else
+        {
+            printf(", fan = %d - bad :(\n", real_fan_state);
+        }
     }
 }
 
