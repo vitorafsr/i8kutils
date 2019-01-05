@@ -43,15 +43,17 @@ int send_smm(unsigned int, unsigned int);
 #define I8K_GET_FAN _IOWR('i', 0x86, size_t)
 #define I8K_SET_FAN _IOWR('i', 0x87, size_t)
 
-void i8k_set_fan_status(int, int);
-int i8k_get_fan_status(int);
-int i8k_get_cpu_temp();
 void i8k_open();
+void set_fan_status(int, int);
+int get_fan_status(int);
+int get_cpu_temp();
+void set_fans_state(int);
 // i8kctl end
 
 // i8kmon-ng
 #define CFG_FILE "/etc/i8kmon-ng.conf"
 #define MON_SPACE "   "
+
 #define true 1
 #define false 0
 
@@ -60,6 +62,8 @@ void i8k_open();
 
 struct t_cfg
 {
+    // brief descriptions at declaration of "struct t_cfg cfg" in i8kmon-ng.c
+    // more specific in i8kmon-ng.conf
     int verbose;
     unsigned long period;
     unsigned long fan_check_period;

@@ -29,22 +29,22 @@
 #include "i8kmon-ng.h"
 
 struct t_cfg cfg = {
-    .mode = 0, // 0 = i8k, 1 = smm
-    .verbose = false,
-    .period = 1000,
-    .fan_check_period = 1000,
-    .monitor_fan_id = I8K_FAN_LEFT, // 0 = right, 1 = left
-    .jump_timeout = 2000,
-    .jump_temp_delta = 5,
-    .t_low = 45,
-    .t_mid = 60,
-    .t_high = 80,
-    .foolproof_checks = true,
-    .daemon = false,
-    .bios_disable_method = 0, // 0 = disable, 1/2 - smm calls from https://github.com/clopez/dellfan
-    .monitor_only = false,
-    .tick = 100,
-    .fan_ctrl_logic_mode = 0, // 0 - default, 1 - allow bios to control fans: stops/starts fans оnly at boundary temps
+    .mode = 0,                      // 0 - i8k, 1 - smm
+    .fan_ctrl_logic_mode = 0,       // 0 - default (see end of i8kmon-ng.conf), 1 - allow bios to control fans: stops/starts fans оnly at boundary temps
+    .bios_disable_method = 0,       // 0 - allow bios to control fans, 1/2 - smm calls for disabling bios fan control from https://github.com/clopez/dellfan
+    .period = 1000,                 // period in ms for checking temp and setting fans
+    .fan_check_period = 1000,       // period in ms for check fans state and recover it (if bios control fans)
+    .monitor_fan_id = I8K_FAN_LEFT, // ID of fan for monitoring: 0 = right, 1 = left
+    .jump_timeout = 2000,           // period in ms, when cpu temp was ingoring, after detected abnormal temp jump
+    .jump_temp_delta = 5,           // cpu temp difference between checks(.period), at which the new value is considered abnormal
+    .t_low = 45,                    // low cpu temp threshold
+    .t_mid = 60,                    // mid cpu temp threshold
+    .t_high = 80,                   // high cpu temp threshold
+    .verbose = false,               // start in verbose mode
+    .daemon = false,                // run daemonize()?
+    .foolproof_checks = true,       // run foolproof_checks()?
+    .monitor_only = false,          // get_only mode - just monitor cpu temp & fan state(.monitor_fan_id)
+    .tick = 100,                    // internal step in ms of main monitor loop
 };
 
 //i8kctl/smm start
@@ -59,11 +59,9 @@ void i8k_open()
         exit(EXIT_FAILURE);
     }
 }
+
 void set_fan_state(int fan, int state)
 {
-    if (cfg.monitor_only)
-        return;
-
     if (cfg.mode)
     {
         //smm
@@ -84,6 +82,7 @@ void set_fan_state(int fan, int state)
         }
     }
 }
+
 int get_fan_state(int fan)
 {
     if (cfg.mode)
@@ -153,6 +152,7 @@ void init_ioperm()
         exit_failure();
     }
 }
+
 int i8k_smm(struct smm_regs *regs)
 {
     int rc;
@@ -188,6 +188,7 @@ int i8k_smm(struct smm_regs *regs)
 
     return 0;
 }
+
 int send_smm(unsigned int cmd, unsigned int arg)
 {
     struct smm_regs regs = {
@@ -254,12 +255,12 @@ void bios_fan_control(int enable)
 // dellfan end
 
 // i8kmon-ng start
-
 void set_fans_state(int state)
 {
     set_fan_state(I8K_FAN_LEFT, state);
     set_fan_state(I8K_FAN_RIGHT, state);
 }
+
 void monitor_show_legend()
 {
     if (cfg.verbose)
@@ -299,8 +300,8 @@ void monitor()
     int temp = get_cpu_temp();
     int temp_prev = temp;
 
-    int fan = I8K_FAN_OFF;
-    int real_fan_state = fan;
+    int fan_state = I8K_FAN_OFF;
+    int real_fan_state = fan_state;
 
     unsigned long tick = cfg.tick * 1000; // 100 ms
     int period_ticks = cfg.period / cfg.tick;
@@ -311,10 +312,7 @@ void monitor()
     int fan_check_period_tick = 0;
     int ignore_current_temp = 0; // jump_timeout_tick
 
-    int last_fan_set = -1;
-
-    // disable abnormal temp jump detection in monitor_only mode
-    int disable_jump_detection = cfg.monitor_only;
+    int last_setted_fan_state = -1;
 
     while (1)
     {
@@ -332,20 +330,21 @@ void monitor()
         {
             fan_check_period_tick = fan_check_period_ticks;
             real_fan_state = get_fan_state(cfg.monitor_fan_id);
-            if (real_fan_state == last_fan_set)
-                last_fan_set = -1;
+            if (real_fan_state == last_setted_fan_state)
+                last_setted_fan_state = -1;
         }
 
         // get temp and use fan control logic
         if (period_tick == 0)
         {
             period_tick = period_ticks;
-            last_fan_set = -1;
+            last_setted_fan_state = -1;
             if (!ignore_current_temp)
             {
                 temp_prev = temp;
                 temp = get_cpu_temp();
-                if (temp - temp_prev > cfg.jump_temp_delta && !disable_jump_detection)
+
+                if (temp - temp_prev > cfg.jump_temp_delta && !cfg.monitor_only)
                     // abnormal temp jump detected
                     ignore_current_temp = jump_timeout_ticks;
                 else
@@ -354,22 +353,22 @@ void monitor()
                     {
                         // allow bios to control fans: stops/starts fans оnly at boundary temps
                         if (temp <= cfg.t_low)
-                            fan = I8K_FAN_OFF;
+                            fan_state = I8K_FAN_OFF;
                         else if (temp > cfg.t_high)
                             //foolproof protection if bios fan control was disabled with third-party method
-                            fan = I8K_FAN_HIGH;
+                            fan_state = I8K_FAN_HIGH;
                         else
-                            fan = real_fan_state;
+                            fan_state = real_fan_state;
                     }
                     else
                     {
                         // default fan control logic
                         if (temp <= cfg.t_low)
-                            fan = I8K_FAN_OFF;
+                            fan_state = I8K_FAN_OFF;
                         else if (temp > cfg.t_high)
-                            fan = I8K_FAN_HIGH;
+                            fan_state = I8K_FAN_HIGH;
                         else if (temp >= cfg.t_mid)
-                            fan = fan == I8K_FAN_HIGH ? fan : I8K_FAN_LOW;
+                            fan_state = fan_state == I8K_FAN_HIGH ? fan_state : I8K_FAN_LOW;
                     }
                 }
             }
@@ -385,15 +384,15 @@ void monitor()
         }
 
         // set fan state
-        if (fan != last_fan_set && (fan != real_fan_state) && !cfg.monitor_only)
+        if ((fan_state != last_setted_fan_state) && (fan_state != real_fan_state) && !cfg.monitor_only)
         {
             if (cfg.verbose)
             {
-                printf("ƒ(%d)" MON_SPACE, fan);
+                printf("ƒ(%d)" MON_SPACE, fan_state);
                 fflush(stdout);
             }
-            last_fan_set = fan;
-            set_fans_state(fan);
+            last_setted_fan_state = fan_state;
+            set_fans_state(fan_state);
         }
     }
 }
