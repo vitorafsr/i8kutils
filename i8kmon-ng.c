@@ -40,11 +40,15 @@ struct t_cfg cfg = {
     .t_low = 45,                    // low cpu temp threshold
     .t_mid = 60,                    // mid cpu temp threshold
     .t_high = 80,                   // high cpu temp threshold
+    .t_low_fan = I8K_FAN_OFF,       // fan state for low cpu temp threshold
+    .t_mid_fan = I8K_FAN_LOW,       // fan state for mid cpu temp threshold
+    .t_high_fan = I8K_FAN_HIGH,     // fan state for high cpu temp threshold
     .verbose = false,               // start in verbose mode
     .daemon = false,                // run daemonize()?
     .foolproof_checks = true,       // run foolproof_checks()?
     .monitor_only = false,          // get_only mode - just monitor cpu temp & fan state(.monitor_fan_id)
     .tick = 100,                    // internal step in ms of main monitor loop
+
 };
 
 //i8kctl/smm start
@@ -301,21 +305,21 @@ void monitor_show_legend()
     {
         puts("Config:");
         printf("  mode                  %s\n", cfg.mode ? "smm" : "i8k");
-        printf("  fan_ctrl_logic_mode   %d\n", cfg.fan_ctrl_logic_mode);
+        printf("  fan_ctrl_logic_mode   %s\n", cfg.fan_ctrl_logic_mode == 0 ? "default" : "simple");
         printf("  bios_disable_method   %d\n", cfg.bios_disable_method);
         printf("  period                %ld ms\n", cfg.period);
         printf("  fan_check_period      %ld ms\n", cfg.fan_check_period);
         printf("  monitor_fan_id        %s\n", cfg.monitor_fan_id == I8K_FAN_RIGHT ? "right" : "left");
         printf("  jump_timeout          %ld ms\n", cfg.jump_timeout);
         printf("  jump_temp_delta       %d°\n", cfg.jump_temp_delta);
-        printf("  t_low                 %d°\n", cfg.t_low);
-        printf("  t_mid                 %d°\n", cfg.t_mid);
-        printf("  t_high                %d°\n", cfg.t_high);
+        printf("  t_low  / t_low_fan    %d° / %s\n", cfg.t_low, cfg.t_low_fan ? (cfg.t_low_fan == 1 ? "low" : "high") : "off");
+        printf("  t_mid  / t_mid_fan    %d° / %s\n", cfg.t_mid, cfg.t_mid_fan ? (cfg.t_mid_fan == 1 ? "low" : "high") : "off");
+        printf("  t_high / t_high_fan   %d° / %s\n", cfg.t_high, cfg.t_high_fan ? (cfg.t_high_fan == 1 ? "low" : "high") : "off");
 
         puts("Legend:");
-        puts("  [TT·F] Monitor(current state). TT - CPU temp, F - fan state");
-        puts("  [ƒ(F)] Set fans state to F. Fan states: 0 = OFF, 1 = LOW, 2 = HIGH.");
-        puts("  [¡TT!] Abnormal temp jump detected. TT - CPU temp. ");
+        puts("  [TT·F] Current temp and fan state. TT - CPU temp, F - fan state");
+        puts("  [ƒ(F)] Set fans state to F. Fan states: 0 = OFF, 1 = LOW, 2 = HIGH");
+        puts("  [¡TT!] Abnormal temp jump detected. TT - CPU temp");
 
         if (cfg.monitor_only)
         {
@@ -387,10 +391,10 @@ void monitor()
                     {
                         // allow bios to control fans: stops/starts fans оnly at boundary temps
                         if (temp <= cfg.t_low)
-                            fan_state = I8K_FAN_OFF;
-                        else if (temp > cfg.t_high)
+                            fan_state = cfg.t_low_fan;
+                        else if (temp >= cfg.t_high)
                             //foolproof protection if bios fan control was disabled with third-party method
-                            fan_state = I8K_FAN_HIGH;
+                            fan_state = cfg.t_high_fan;
                         else
                             fan_state = real_fan_state;
                     }
@@ -398,11 +402,11 @@ void monitor()
                     {
                         // default fan control logic
                         if (temp <= cfg.t_low)
-                            fan_state = I8K_FAN_OFF;
+                            fan_state = cfg.t_low_fan;
                         else if (temp > cfg.t_high)
-                            fan_state = I8K_FAN_HIGH;
+                            fan_state = cfg.t_high_fan;
                         else if (temp >= cfg.t_mid)
-                            fan_state = fan_state == I8K_FAN_HIGH ? fan_state : I8K_FAN_LOW;
+                            fan_state = fan_state > cfg.t_mid_fan ? fan_state : cfg.t_mid_fan;
                     }
                 }
             }
@@ -434,18 +438,24 @@ void monitor()
 void foolproof_checks()
 {
     int check_failed = false;
+    check_failed += (cfg.mode != 0 && cfg.mode != 1) ? foolproof_error("mode = 0 (use i8k module) or 1 (direct smm calls) ") : false;
+    check_failed += (cfg.fan_ctrl_logic_mode != 0 && cfg.fan_ctrl_logic_mode != 1) ? foolproof_error("fan_ctrl_logic_mode = 0 (default fan control logic) or 1 (stops/starts fans оnly at boundary temps) ") : false;
+    check_failed += (cfg.bios_disable_method < 0 || cfg.bios_disable_method > 2) ? foolproof_error("bios_disable_method in [0,2]") : false;
+
     check_failed += (cfg.t_low < 30) ? foolproof_error("t_low >= 30") : false;
     check_failed += (cfg.t_high > 90) ? foolproof_error("t_high <= 90") : false;
     check_failed += (cfg.t_low < cfg.t_mid && cfg.t_mid < cfg.t_high) ? false : foolproof_error("thresholds t_low < t_mid < t_high");
+
+    check_failed += (cfg.t_low_fan < I8K_FAN_OFF || cfg.t_low_fan > I8K_FAN_MAX) ? foolproof_error("t_low_fan = 0(OFF), 1(LOW), 2(HIGH)") : false;
+    check_failed += (cfg.t_mid_fan < I8K_FAN_OFF || cfg.t_mid_fan > I8K_FAN_MAX) ? foolproof_error("t_mid_fan = 0(OFF), 1(LOW), 2(HIGH)") : false;
+    check_failed += (cfg.t_high_fan < I8K_FAN_OFF || cfg.t_high_fan > I8K_FAN_MAX) ? foolproof_error("t_high_fan = 0(OFF), 1(LOW), 2(HIGH)") : false;
+
     check_failed += (cfg.period < 100 || cfg.period > 5000) ? foolproof_error("period in [100,5000]") : false;
     check_failed += (cfg.fan_check_period > cfg.period) ? foolproof_error("fan_check_period <= period") : false;
     check_failed += (cfg.fan_check_period < 100 || cfg.fan_check_period > 5000) ? foolproof_error("fan_check_period in [100,5000]") : false;
     check_failed += (cfg.monitor_fan_id != 0 && cfg.monitor_fan_id != 1) ? foolproof_error("monitor_fan_id = 1(right) or 0(left)") : false;
     check_failed += (cfg.jump_timeout < 100 || cfg.jump_timeout > 5000) ? foolproof_error("jump_timeout in [100,5000]") : false;
     check_failed += (cfg.jump_temp_delta < 2) ? foolproof_error("jump_temp_delta > 2") : false;
-    check_failed += (cfg.bios_disable_method < 0 || cfg.bios_disable_method > 2) ? foolproof_error("bios_disable_method in [0,2]") : false;
-    check_failed += (cfg.mode != 0 && cfg.mode != 1) ? foolproof_error("mode = 0 (use i8k module) or 1 (direct smm calls) ") : false;
-    check_failed += (cfg.fan_ctrl_logic_mode != 0 && cfg.fan_ctrl_logic_mode != 1) ? foolproof_error("fan_ctrl_logic_mode = 0 (default fan control logic) or 1 (stops/starts fans оnly at boundary temps) ") : false;
 
     if (check_failed)
     {
@@ -534,6 +544,12 @@ void cfg_set(char *key, int value, int line_id)
         cfg.t_mid = value;
     else if (strcmp(key, "t_high") == 0)
         cfg.t_high = value;
+    else if (strcmp(key, "t_low_fan") == 0)
+        cfg.t_low_fan = value;
+    else if (strcmp(key, "t_mid_fan") == 0)
+        cfg.t_mid_fan = value;
+    else if (strcmp(key, "t_high_fan") == 0)
+        cfg.t_high_fan = value;
     else if (strcmp(key, "foolproof_checks") == 0)
         cfg.foolproof_checks = value;
     else if (strcmp(key, "bios_disable_method") == 0)
@@ -564,10 +580,10 @@ void usage()
     puts("  -h  Show this help");
     puts("  -v  Verbose mode");
     puts("  -d  Daemon mode (detach from console)");
-    puts("  -m  No control - monitor only (useful to monitor daemon working)");
-    printf("Args(see %s for explains):\n", CFG_FILE);
+    puts("  -m  No control - monitor only (useful to monitor daemon work)");
+    puts("Options (see " CFG_FILE " or manpage for explains):");
     printf("  --mode MODE                       (default: %d = %s)\n", cfg.mode, cfg.mode ? "smm" : "i8k");
-    printf("  --fan_ctrl_logic_mode MODE        (default: %d)\n", cfg.fan_ctrl_logic_mode);
+    printf("  --fan_ctrl_logic_mode MODE        (default: %d = %s)\n", cfg.fan_ctrl_logic_mode, cfg.fan_ctrl_logic_mode == 0 ? "default" : "simple");
     printf("  --bios_disable_method METHOD      (default: %d)\n", cfg.bios_disable_method);
     printf("  --period MILLISECONDS             (default: %ld ms)\n", cfg.period);
     printf("  --fan_check_period MILLISECONDS   (default: %ld ms)\n", cfg.fan_check_period);
@@ -577,6 +593,9 @@ void usage()
     printf("  --t_low CELSIUS                   (default: %d°)\n", cfg.t_low);
     printf("  --t_mid CELSIUS                   (default: %d°)\n", cfg.t_mid);
     printf("  --t_high CELSIUS                  (default: %d°)\n", cfg.t_high);
+    printf("  --t_low_fan FAN_STATE             (default: %d = %s)\n", cfg.t_low_fan, cfg.t_low_fan ? (cfg.t_low_fan == 1 ? "low" : "high") : "off");
+    printf("  --t_mid_fan FAN_STATE             (default: %d = %s)\n", cfg.t_mid_fan, cfg.t_mid_fan ? (cfg.t_mid_fan == 1 ? "low" : "high") : "off");
+    printf("  --t_high_fan FAN_STATE            (default: %d = %s)\n", cfg.t_high_fan, cfg.t_high_fan ? (cfg.t_high_fan == 1 ? "low" : "high") : "off");
 
     puts("");
 }
@@ -653,6 +672,10 @@ void signal_handler(int signal_id)
         if (cfg.bios_disable_method == 1 || cfg.bios_disable_method == 2 || cfg.bios_disable_method == 3)
             bios_fan_control(true);
     }
+    else if (cfg.verbose)
+    {
+        puts("");
+    }
     exit(EXIT_SUCCESS);
 }
 
@@ -673,7 +696,7 @@ void signal_handler_init()
 void bios_fan_control_scanner()
 {
     // Please DON'T USE THIS CODE - it may be DANGEROUS
-    // Also: algorithm of search based on fact from my Dell 7559:
+    // Also: algorithm of c based on fact from my Dell 7559:
     //       if i set fan_state = LOW(1), bios set it to HIGH(2) within 10 seconds
     //       i don't sure that this fact is true for all dell notebooks.
     // No success on Dell 7559 :(

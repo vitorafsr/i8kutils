@@ -8,7 +8,7 @@ The i8kmon-ng is a daemon that monitors the cpu temperature, and control the fan
 .br
 It does that by means of regularly reading the system temperature, and choosing appropriate speed of the fans. 
 .LP
-All options can be customized at '/etc/i8kmon-ng.conf', or via command-line options
+All options can be customized at \fB/etc/i8kmon-ng.conf\fP, or via command-line options
 .LP
 On Debian and derivated OSes, i8kmon-ng starts in the background by default as a service.
 .SH "ACCESS MODE"
@@ -37,39 +37,35 @@ On exit (SIGTERM, SIGINT) i8kmon-ng set fans speed to max and try to restore BIO
 .LP
 Use \fImethod\fP 0 for disable this feature. 
 .SH "FAN CONTROL LOGIC"
-i8kmon-ng has two modes of fans control logic regarding 3 temperature thresholds \fBt_low\fR, \fBt_mid\fR, \fBt_high\fR (\fB--fan_ctrl_logic_mode\fR <\fImode\fP>):
+i8kmon-ng has two modes of fans control logic(\fB--fan_ctrl_logic_mode\fR <\fImode\fP>) regarding 3 temperature thresholds \fBt_low\fR, \fBt_mid\fR, \fBt_high\fR and corresponding fan states \fBt_low_fan\fR, \fBt_mid_fan\fR, \fBt_high_fan\fR:
 .IP \[bu] 2
-\fImode\fP 0: Default logic
+\fImode\fP 0: Default logic (with default t_*_fan)
 .RS
 .IP \[bu] 2 
 When temperature rising:
-.RS
-.IP \[bu] 2 
-if temp in [t_low,t_mid] and fan = 0: fan = 0
-.IP \[bu]
-if temp > t_mid: fan = 1
-.IP \[bu] 
-if temp > t_high: fan = 2
-.RE
+    if temp in [t_low,t_mid] and fan_state = OFF: fan_state = OFF
+    if temp > t_mid: fan_state = LOW
+    if temp > t_high: fan_state = HIGH
 .IP \[bu]
 When temperature lowering:
-.RS
-.IP \[bu] 2
-if temp < t_low: fan = 0
+    if temp < t_low: fan_state = OFF
+    if temp in [t_low,t_mid] and fan_state = LOW: fan_state = LOW
+    if temp in [t_low, t_high] and fan_state = HIGH: fan_state = HIGH
+
 .IP \[bu]
-if temp in [t_low,t_mid] and fan = 1: fan = 1
-.IP \[bu]
-if temp in [t_low, t_high] and fan = 2: fan = 2
+Real code:
+    if (temp <= cfg.t_low)
+        fan_state = cfg.t_low_fan;
+    else if (temp > cfg.t_high)
+        fan_state = cfg.t_high_fan;
+    else if (temp >= cfg.t_mid)
+        fan_state = fan_state > cfg.t_mid_fan ? fan_state : cfg.t_mid_fan;
 .RE
-.RE
+
 .IP \[bu]
 \fImode\fP 1: Simple logic which allow BIOS to control fans. Stop/start fans оnly at boundary temps
-.RS
-.IP \[bu] 2
-if temp < t_low: fan = 0
-.IP \[bu]
-if temp > t_high: fan = 2 
-.RE
+    if temp < t_low: fan_state = t_low_fan
+    if temp > t_high: fan_state = t_high_fan
 .SH "ABNORMAL TEMP JUMP DETECTION"
 i8kmon-ng has buildin mechanism for detect abnormal cpu temp jumps: short(1-2 seconds) cpu temp jumps on +20/+30 celsius which are cause of starting fans. You can control it via \fB--jump_temp_delta\fR and \fB--jump_timeout\fR options.
 .LP
@@ -135,8 +131,17 @@ Temperature threshold "low" in celsius. Default is 45° celsius.
 \fB--t_mid\fR <\fIcelsius\fP>
 Temperature threshold "middle" in celsius. Default is 60° celsius.
 .TP
-\fB--t_high\fR <\fcelsius\fP>
+\fB--t_high\fR <\fIcelsius\fP>
 Temperature threshold "high" in celsius. Default is 80° celsius. 
+.TP
+\fB--t_low_fan\fR <\fIfan_state_id\fP>
+Fan state corresponding to temperature threshold "low". Default is 0 (OFF).
+.TP
+\fB--t_low_fan\fR <\fIfan_state_id\fP>
+Fan state corresponding to temperature threshold "middle". Default is 1 (LOW).
+.TP
+\fB--t_low_fan\fR <\fIfan_state_id\fP>
+Fan state corresponding to temperature threshold "high". Default is 2 (HIGH).
 .SH "CONFIGURATION"
 .LP
 i8kmon-ng has builtin default values of all options. User can see current values using \fB\-\-help\fR option. 

@@ -40,6 +40,7 @@ int send_smm(unsigned int, unsigned int);
 #define I8K_FAN_OFF 0
 #define I8K_FAN_LOW 1
 #define I8K_FAN_HIGH 2
+#define I8K_FAN_MAX I8K_FAN_HIGH
 
 #define I8K_GET_TEMP _IOR('i', 0x84, size_t)
 #define I8K_GET_FAN _IOWR('i', 0x86, size_t)
@@ -76,6 +77,9 @@ struct t_cfg
     int t_low;
     int t_mid;
     int t_high;
+    int t_low_fan;
+    int t_mid_fan;
+    int t_high_fan;
     int foolproof_checks;
     int daemon;
     int bios_disable_method;
