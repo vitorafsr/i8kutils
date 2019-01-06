@@ -389,11 +389,10 @@ void monitor()
                 {
                     if (cfg.fan_ctrl_logic_mode)
                     {
-                        // allow bios to control fans: stops/starts fans оnly at boundary temps
-                        if (temp <= cfg.t_low)
+                        // simple: allow bios to control fans: stops/starts fans оnly at boundary temps
+                        if (temp <= cfg.t_low && real_fan_state > cfg.t_low_fan)
                             fan_state = cfg.t_low_fan;
-                        else if (temp >= cfg.t_high)
-                            //foolproof protection if bios fan control was disabled with third-party method
+                        else if (temp >= cfg.t_high && real_fan_state < cfg.t_high_fan)
                             fan_state = cfg.t_high_fan;
                         else
                             fan_state = real_fan_state;
