@@ -5,6 +5,8 @@ ConditionPathExists=/proc/i8k
 
 [Service]
 ExecStart=/usr/bin/i8kmon --nouserconfig
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
